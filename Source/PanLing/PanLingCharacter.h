@@ -106,9 +106,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	FName WeaponSocketName;
 
-	// 具体的攻击动作 (Montage)，我们下一步会用到
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* AttackMontage;
+	//// 具体的攻击动作 (Montage)，我们下一步会用到
+	//UPROPERTY(EditAnywhere, Category = "Combat")
+	//UAnimMontage* AttackMontage;
 
 	// 攻击输入
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")

@@ -147,12 +147,17 @@ void APanLingCharacter::BeginPlay()
 
 void APanLingCharacter::Attack()
 {
+	// 假设你已经创建并初始化了 CombatComp
+	if (CombatComp)
+	{
+		CombatComp->RequestAttack();
+	}
 	// 检查是否可以攻击（如果没有在攻击中）
-	if (CombatComp && !CombatComp->IsAttacking() && AttackMontage)
+	/*if (CombatComp && !CombatComp->IsAttacking() && AttackMontage)
 	{
 		CombatComp->SetAttacking(true);
 		PlayAnimMontage(AttackMontage);
-	}
+	}*/
 }
 
 APanLingWeapon* APanLingCharacter::GetEquippedWeapon() const
@@ -183,8 +188,8 @@ void APanLingCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
+	//当在攻击的时候不能移动
+	if (Controller != nullptr && !CombatComp->IsAttacking())
 	{
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
