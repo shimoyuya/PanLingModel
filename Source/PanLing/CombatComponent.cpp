@@ -80,25 +80,6 @@ APanLingWeapon* UCombatComponent::GetEquippedWeapon() const
 	return EquippedWeapon;
 }
 
-void UCombatComponent::StartWeaponTrace()
-{
-	if (EquippedWeapon)
-	{
-		// 开启武器的碰撞检测
-		EquippedWeapon->SetCollisionEnabled(true);
-		UE_LOG(LogTemp, Warning, TEXT("Weapon collision enabled"));
-	}
-}
-
-void UCombatComponent::StopWeaponTrace()
-{
-	if (EquippedWeapon)
-	{
-		// 关闭武器的碰撞检测，并清空已经击中过的目标列表（防止一次挥砍重复击中同一个人）
-		EquippedWeapon->SetCollisionEnabled(false);
-		EquippedWeapon->ClearHitActors();
-	}
-}
 
 void UCombatComponent::RequestAttack()
 {

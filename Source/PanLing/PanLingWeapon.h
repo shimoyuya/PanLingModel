@@ -22,21 +22,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName WeaponName;
 
-	// 用于伤害判定的碰撞盒
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	UBoxComponent* CollisionBox;
-
 	// 基础伤害值
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	float BaseDamage;
+	float BaseDamage = 20.0f;
 
 	// 记录一次攻击中已经击中过的 Actor，防止多帧重复扣血
 	UPROPERTY()
 	TArray<AActor*> HitActors;
 
-	// 碰撞盒重叠事件
-	UFUNCTION()
-	void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	// 标记当前是否正在挥刀
+	bool bIsTracing;
 
 public:	
 	// Sets default values for this actor's properties
@@ -50,8 +45,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// 控制碰撞是否开启
-	void SetCollisionEnabled(bool bEnabled);
+	// --- 全新精准轨迹检测接口 ---
+	void StartWeaponTrace();
+	void DoWeaponTrace();
+	void StopWeaponTrace();
 
 	// 清空击中列表
 	void ClearHitActors();

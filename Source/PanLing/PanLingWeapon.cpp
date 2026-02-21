@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Controller.h"
+#include "DrawDebugHelpers.h" //
 
 
 // Sets default values
@@ -20,16 +21,8 @@ APanLingWeapon::APanLingWeapon()
 	// 这里设为 NoCollision，攻击判定我们后面用专门的 Trace 或者 BoxComponent 做
 	MeshComp->SetCollisionProfileName(TEXT("NoCollision"));
 
-	// 创建碰撞盒
-	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	CollisionBox->SetupAttachment(RootComponent);
-
-	// 默认关闭碰撞，只有挥砍时才开启
-	CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// 设置只检测 Query (重叠和射线)，不参与物理模拟
-	CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	// 假设敌人的碰撞体类型是 Pawn
-	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	bIsTracing = false;
+	BaseDamage = 20.0f;
 }
 
 // Called when the game starts or when spawned
@@ -37,12 +30,6 @@ void APanLingWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// 绑定重叠事件
-	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &APanLingWeapon::OnBoxOverlap);
-
-	// 添加：检查碰撞盒的设置
-	UE_LOG(LogTemp, Warning, TEXT("CollisionBox Response to Pawn: %d"),
-		CollisionBox->GetCollisionResponseToChannel(ECC_Pawn));
 }
 
 // Called every frame
@@ -52,16 +39,64 @@ void APanLingWeapon::Tick(float DeltaTime)
 
 }
 
-void APanLingWeapon::SetCollisionEnabled(bool bEnabled)
+void APanLingWeapon::StartWeaponTrace()
 {
-	if (bEnabled)
+	bIsTracing = true;
+	ClearHitActors(); // 每次全新挥砍时，清空击中列表
+}
+
+void APanLingWeapon::DoWeaponTrace()
+{
+	if (!bIsTracing || !MeshComp) return;
+
+	// 获取我们在蓝图中要在刀剑模型上添加的两个插槽位置：刀根(Start) 和 刀尖(End)
+	FVector TraceStartLoc = MeshComp->GetSocketLocation(FName("TraceStart"));
+	FVector TraceEndLoc = MeshComp->GetSocketLocation(FName("TraceEnd"));
+
+	// 配置球形射线：半径20代表刀刃的厚度和判定范围
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(20.0f);
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(GetOwner()); // 绝不能砍到自己
+
+	TArray<FHitResult> HitResults;
+
+	// 从刀根向刀尖扫出一个胶囊体范围
+	bool bHit = GetWorld()->SweepMultiByChannel(
+		HitResults,
+		TraceStartLoc,
+		TraceEndLoc,
+		FQuat::Identity,
+		ECC_Pawn, // 依然假设敌人是 Pawn 通道
+		Sphere,
+		QueryParams
+	);
+
+	// 【酷炫功能】画出武器挥舞的轨迹，方便你在编辑器里调试判定范围 (正式打包时可去掉)
+	DrawDebugCapsule(GetWorld(), (TraceStartLoc + TraceEndLoc) * 0.5f, FVector::Distance(TraceStartLoc, TraceEndLoc) * 0.5f, 20.0f, FQuat::FindBetweenVectors(FVector::UpVector, TraceEndLoc - TraceStartLoc), FColor::Red, false, 2.0f);
+
+	if (bHit)
 	{
-		CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+			// 如果打到了有效敌人，并且这一刀还没打过他
+			if (HitActor && !HitActors.Contains(HitActor))
+			{
+				HitActors.Add(HitActor);
+
+				// 造成伤害
+				UGameplayStatics::ApplyDamage(HitActor, BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+
+				UE_LOG(LogTemp, Warning, TEXT("精准砍中: %s"), *HitActor->GetName());
+			}
+		}
 	}
-	else
-	{
-		CollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+}
+
+void APanLingWeapon::StopWeaponTrace()
+{
+	bIsTracing = false;
 }
 
 void APanLingWeapon::ClearHitActors()
@@ -69,26 +104,3 @@ void APanLingWeapon::ClearHitActors()
 	HitActors.Empty();
 }
 
-void APanLingWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// 1. 防止砍到自己
-	// 2. 防止砍到重复的目标
-	// 3. 确保打到的是有效的 Actor
-	UE_LOG(LogTemp, Warning, TEXT("触发重叠"));
-	if (OtherActor && OtherActor != GetOwner() && !HitActors.Contains(OtherActor))
-	{
-		// 加入已击中列表
-		HitActors.Add(OtherActor);
-
-		// 打印日志方便调试
-		UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OtherActor->GetName());
-
-		if (!GetInstigatorController())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GetInstigatorController() is null"));
-		}
-		// TODO: 这里可以调用你之前写的 AttributeComponent 的 ApplyHealthChange，或者使用 UE 自带的伤害系统
-		// 我们先用 UE 自带的，它通用性更好：
-		UGameplayStatics::ApplyDamage(OtherActor, BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
-	}
-}

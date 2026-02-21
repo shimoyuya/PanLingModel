@@ -45,14 +45,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	APanLingWeapon* GetEquippedWeapon() const;
 
-	// 开始攻击判定 (由动画通知调用)
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void StartWeaponTrace();
-
-	// 结束攻击判定 (由动画通知调用)
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void StopWeaponTrace();
-
 	// 设置攻击状态
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetAttacking(bool bAttacking) { bIsAttacking = bAttacking; }
@@ -79,7 +71,7 @@ protected:
 	float TargetingRadius = 400.0f; // 索敌半径
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Targeting")
-	float TargetingAngle = 60.0f; // 索敌角度（正前方多少度以内）
+	float TargetingAngle = 180.0f; // 索敌角度（正前方多少度以内）
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Targeting")
 	float RotationInterpSpeed = 15.0f; // 转身插值速度
