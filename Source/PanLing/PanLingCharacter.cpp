@@ -17,6 +17,8 @@
 #include "CombatComponent.h"
 #include "PanLingPlayerHUD.h"
 #include <Kismet/GameplayStatics.h>
+#include "Kismet/KismetMathLibrary.h" // 用于获取看向目标的旋转 (FindLookAtRotation)
+#include "PanLingEnemy.h"             // 用于识别扫描到的 Actor 是否是敌人
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -103,6 +105,9 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APanLingCharacter::PrimaryInteract);
 		//攻击
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &APanLingCharacter::Attack);
+
+		// 绑定锁定按键 (Triggered 表示按下时触发一次)
+		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &APanLingCharacter::ToggleLockOn);
 	}
 	else
 	{
@@ -212,7 +217,7 @@ void APanLingCharacter::Look(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if (Controller != nullptr && !bIsLockedOn)
 	{
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
@@ -257,4 +262,157 @@ void APanLingCharacter::PrimaryInteract()
 			}
 		}
 	}
+}
+
+void APanLingCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 如果处于锁定状态并且目标有效
+	if (bIsLockedOn && LockedTarget)
+	{
+		// 检查目标是否跑得太远（超出半径的 20% 就断开锁定）
+		float Distance = FVector::Distance(GetActorLocation(), LockedTarget->GetActorLocation());
+		if (Distance > LockOnRadius * 1.2f)
+		{
+			ClearLockOn();
+			return;
+		}
+
+		// --- 计算相机的目标旋转角度 ---
+		FVector CameraLocation = GetFollowCamera()->GetComponentLocation();
+
+		// 我们通常希望看向敌人的胸口而不是脚底(Root位置)，所以 Z 轴可以稍微抬高一点
+		FVector TargetLocation = LockedTarget->GetActorLocation() + FVector(0.f, 0.f, 20.f);
+
+		// 寻找从相机看向目标的旋转值
+		FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(CameraLocation, TargetLocation);
+
+		// 我们通常不希望锁定改变相机的 Roll（翻滚角），并且 Pitch（俯仰角）可以稍微做限制
+		TargetRotation.Roll = 0.f;
+
+		// 获取玩家控制器当前的旋转值
+		FRotator CurrentRotation = GetController()->GetControlRotation();
+
+		// 使用 RInterpTo 进行平滑插值运算
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnInterpSpeed);
+
+		// 设置给控制器，这会驱动 SpringArm 移动
+		GetController()->SetControlRotation(NewRotation);
+	}
+}
+
+void APanLingCharacter::ToggleLockOn()
+{
+	if (bIsLockedOn)
+	{
+		// 如果已经锁定，则取消锁定
+		ClearLockOn();
+	}
+	else
+	{
+		// 如果没有锁定，尝试寻找目标
+		FindLockOnTarget();
+	}
+}
+
+void APanLingCharacter::FindLockOnTarget()
+{
+	// 获取相机的位置和朝向，用来判断敌人在不在屏幕前方
+	FVector CameraLocation = GetFollowCamera()->GetComponentLocation();
+	FVector CameraForward = GetFollowCamera()->GetForwardVector();
+
+	// 准备球形检测的数据
+	TArray<FHitResult> HitResults;
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(LockOnRadius);
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this); // 忽略自己
+	QueryParams.AddIgnoredActor(CombatComp->GetEquippedWeapon());
+
+	// 在角色周围画一个球型碰撞进行检测 (Sweep)
+	bool bHit = GetWorld()->SweepMultiByChannel(
+		HitResults,
+		GetActorLocation(),
+		GetActorLocation(),
+		FQuat::Identity,
+		ECC_Pawn, // 假设敌人是 Pawn 碰撞通道，具体视你的项目而定
+		Sphere,
+		QueryParams
+	);
+
+	AActor* BestTarget = nullptr;
+	//记录最短距离。初始值设为我们搜索半径的平方
+	// 使用 DistSquared（距离的平方）比 Dist（真实距离）更快，因为它省去了消耗性能的开根号运算 (Sqrt)
+	float ClosestDistanceSq = LockOnRadius * LockOnRadius;
+
+	if (bHit)
+	{
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+
+			// 确认扫描到的是敌人 (使用强转或者判断 Class)
+			if (HitActor && HitActor->IsA(APanLingEnemy::StaticClass()))
+			{
+				// 计算从相机到敌人的方向向量
+				FVector DirToTarget = (HitActor->GetActorLocation() - CameraLocation).GetSafeNormal();
+
+				// 计算点乘 (Dot Product)
+				// CameraForward 和 DirToTarget 都是单位向量，点乘结果在 -1 到 1 之间。
+				// 1代表正前方，0代表正侧面，-1代表正后方。
+				float Dot = FVector::DotProduct(CameraForward, DirToTarget);
+
+				// 筛选条件：目标必须在镜头前方一定角度内
+				// 只要敌人在我们前方一定角度内 (Dot > 0.4 大约是前方 130 度的扇形视野)
+				if (Dot > 0.4f)
+				{
+					// 计算主角到敌人的距离平方
+					float DistanceSq = FVector::DistSquared(GetActorLocation(), HitActor->GetActorLocation());
+
+					// 如果这个敌人的距离比我们之前记录的最短距离还要小，就更新最佳目标
+					if (DistanceSq < ClosestDistanceSq)
+					{
+						ClosestDistanceSq = DistanceSq;
+						BestTarget = HitActor;
+					}
+				}
+			}
+		}
+	}
+
+	if (BestTarget)
+	{
+		LockedTarget = BestTarget;
+		bIsLockedOn = true;
+
+		// 【关键】：改变移动模式为“扫射(Strafe)”
+		// 关闭“根据移动方向旋转角色”，开启“使用控制器的偏航角”
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		bUseControllerRotationYaw = true;
+
+		// 将 BestTarget 转换为 APanLingEnemy 并显示准星
+		if (APanLingEnemy* EnemyTarget = Cast<APanLingEnemy>(LockedTarget))
+		{
+			EnemyTarget->ShowLockOnUI();
+		}
+	}
+}
+
+void APanLingCharacter::ClearLockOn()
+{
+	// 在清空锁定目标之前，先隐藏当前目标的准星
+	if (LockedTarget)
+	{
+		if (APanLingEnemy* EnemyTarget = Cast<APanLingEnemy>(LockedTarget))
+		{
+			EnemyTarget->HideLockOnUI();
+		}
+	}
+
+	LockedTarget = nullptr;
+	bIsLockedOn = false;
+
+	// 恢复为自由视角的移动模式
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 }

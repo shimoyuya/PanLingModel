@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CombatComponent.h"
 #include "PanLingWeapon.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -26,6 +27,23 @@ APanLingEnemy::APanLingEnemy()
 
 	// 创建战斗组件
 	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComp"));
+
+	// 1. 创建 Widget 组件
+	LockOnWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("LockOnWidgetComp"));
+
+	// 2. 附加到敌人的 RootComponent 或 Mesh 上
+	// 建议附加在 Mesh 上，并可以稍微往上抬一点，这样准星会在胸口/头部位置
+	LockOnWidgetComp->SetupAttachment(GetMesh());
+	LockOnWidgetComp->SetRelativeLocation(FVector(0.f, 0.f, 50.f)); // 根据你的模型调整高度
+
+	// 3. 【关键】设置为屏幕空间 (Screen Space)，这样UI会永远面朝屏幕并且不受透视缩放影响
+	LockOnWidgetComp->SetWidgetSpace(EWidgetSpace::Screen);
+
+	// 4. 设置默认大小
+	LockOnWidgetComp->SetDrawSize(FVector2D(50.f, 50.f));
+
+	// 5. 默认状态下隐藏准星
+	LockOnWidgetComp->SetVisibility(false);
 }
 
 // Called when the game starts or when spawned
@@ -119,5 +137,21 @@ void APanLingEnemy::Attack()
 		GetWorldTimerManager().SetTimer(TimerHandle_AttackReset, [this]() {
 			if (CombatComp) CombatComp->SetAttacking(false);
 			}, 1.5f, false);
+	}
+}
+
+void APanLingEnemy::ShowLockOnUI()
+{
+	if (LockOnWidgetComp)
+	{
+		LockOnWidgetComp->SetVisibility(true);
+	}
+}
+
+void APanLingEnemy::HideLockOnUI()
+{
+	if (LockOnWidgetComp)
+	{
+		LockOnWidgetComp->SetVisibility(false);
 	}
 }

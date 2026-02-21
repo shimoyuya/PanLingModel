@@ -10,6 +10,7 @@ class UAttributeComponent;
 class UCombatComponent;
 class APanLingWeapon;
 class UAnimMontage;
+class UWidgetComponent;
 
 UCLASS()
 class PANLING_API APanLingEnemy : public ACharacter
@@ -44,6 +45,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* AttackMontage;
 
+	// 锁定准星的UI组件
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* LockOnWidgetComp;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -56,4 +61,8 @@ public:
 
 	// 供 AI 调用的攻击函数
 	void Attack();
+
+	// 暴露给外部调用的接口：显示和隐藏准星
+	void ShowLockOnUI();
+	void HideLockOnUI();
 };

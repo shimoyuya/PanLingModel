@@ -128,5 +128,43 @@ public:
 
 	// 重写受击函数
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+public:
+		// 每帧更新函数，我们将在这里处理镜头平滑跟随
+		virtual void Tick(float DeltaTime) override;
+
+protected:
+	/*========================================================================
+	 * 目标锁定系统 (Target Lock-on System)
+	 *======================================================================*/
+
+	 // 锁定按键输入
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* LockOnAction;
+
+	// 当前锁定的目标
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|LockOn")
+	AActor* LockedTarget;
+
+	// 是否正在锁定中
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|LockOn")
+	bool bIsLockedOn;
+
+	// 搜索敌人的最大半径
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|LockOn")
+	float LockOnRadius = 1500.f;
+
+	// 镜头跟随敌人的平滑速度
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|LockOn")
+	float LockOnInterpSpeed = 5.0f;
+
+	// 触发锁定的主逻辑
+	void ToggleLockOn();
+
+	// 寻找最近的最佳目标
+	void FindLockOnTarget();
+
+	// 清除锁定状态
+	void ClearLockOn();
 };
 
