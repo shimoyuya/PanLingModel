@@ -136,7 +136,7 @@ void APanLingEnemy::Attack()
 		FTimerHandle TimerHandle_AttackReset;
 		GetWorldTimerManager().SetTimer(TimerHandle_AttackReset, [this]() {
 			if (CombatComp) CombatComp->SetAttacking(false);
-			}, 1.5f, false);
+			}, 1.0f, false);
 	}
 }
 
