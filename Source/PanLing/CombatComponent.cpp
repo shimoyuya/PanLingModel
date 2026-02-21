@@ -5,6 +5,7 @@
 #include "PanLingCharacter.h"
 #include "PanLingWeapon.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values for this component's properties
 UCombatComponent::UCombatComponent()
@@ -39,6 +40,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	// 如果正在攻击且找到了目标，执行平滑转身
 	if (bIsRotating && CurrentTarget && GetOwner())
 	{
+		
 		ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 		if (OwnerCharacter)
 		{
@@ -148,6 +150,8 @@ void UCombatComponent::ResetCombatState()
 	// 攻击结束，关闭旋转
 	bIsRotating = false;
 	CurrentTarget = nullptr;
+
+	CharacterOwner->GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void UCombatComponent::PerformAttack()
@@ -155,6 +159,8 @@ void UCombatComponent::PerformAttack()
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (OwnerCharacter && ComboMontage)
 	{
+		// 在攻击开始时
+		CharacterOwner->GetCharacterMovement()->bOrientRotationToMovement = false;
 		// 每次发起新的攻击动作时，寻找最近的敌人
 		FindNearestTarget();
 
@@ -185,6 +191,10 @@ void UCombatComponent::FindNearestTarget()
 	TArray<FHitResult> HitResults;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(OwnerChar); // 忽略自己
+	if (EquippedWeapon)
+	{
+		QueryParams.AddIgnoredActor(EquippedWeapon);
+	}
 
 	// 执行场景检测 (假设敌人属于 Pawn 碰撞通道)
 	bool bHit = World->SweepMultiByChannel(HitResults, PlayerLoc, PlayerLoc, FQuat::Identity, ECC_Pawn, Sphere, QueryParams);
