@@ -88,6 +88,18 @@ void APanLingWeapon::DoWeaponTrace()
 				// 造成伤害
 				UGameplayStatics::ApplyDamage(HitActor, BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
 
+				//播放粒子特效 (在具体的击中点 ImpactPoint)
+				if (HitVFX)
+				{
+					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitVFX, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+				}
+
+				// 播放音效
+				if (HitSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(this, HitSound, Hit.ImpactPoint);
+				}
+
 				UE_LOG(LogTemp, Warning, TEXT("精准砍中: %s"), *HitActor->GetName());
 			}
 		}

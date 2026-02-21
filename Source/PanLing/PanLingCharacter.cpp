@@ -152,17 +152,15 @@ void APanLingCharacter::BeginPlay()
 
 void APanLingCharacter::Attack()
 {
+	// 只能在空闲状态，或者已经在攻击状态(用于连招) 时发起攻击
+	if (ActionState == EActionState::HitReact || ActionState == EActionState::Dead) return;
+
 	// 假设你已经创建并初始化了 CombatComp
 	if (CombatComp)
 	{
+		ActionState = EActionState::Attacking;
 		CombatComp->RequestAttack();
 	}
-	// 检查是否可以攻击（如果没有在攻击中）
-	/*if (CombatComp && !CombatComp->IsAttacking() && AttackMontage)
-	{
-		CombatComp->SetAttacking(true);
-		PlayAnimMontage(AttackMontage);
-	}*/
 }
 
 APanLingWeapon* APanLingCharacter::GetEquippedWeapon() const
@@ -191,10 +189,12 @@ float APanLingCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dama
 
 void APanLingCharacter::Move(const FInputActionValue& Value)
 {
+	// 如果不是空闲状态（比如正在攻击或正在受击），禁止移动！
+	if (ActionState != EActionState::Unoccupied) return;
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	//当在攻击的时候不能移动
-	if (Controller != nullptr && !CombatComp->IsAttacking())
+	if (Controller != nullptr )
 	{
 		// find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();

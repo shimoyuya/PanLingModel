@@ -17,6 +17,15 @@ class APanLingWeapon;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+UENUM(BlueprintType)
+enum class EActionState : uint8
+{
+	Unoccupied, // 空闲状态，可以自由移动和做任何事
+	Attacking,  // 攻击中，不能移动或闪避
+	HitReact,   // 受击硬直中，不能做任何事
+	Dead        // 死亡
+};
+
 UCLASS(config=Game)
 class APanLingCharacter : public ACharacter
 {
@@ -129,9 +138,13 @@ public:
 	// 重写受击函数
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+	// 当前状态
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "State")
+	EActionState ActionState = EActionState::Unoccupied;
+
 public:
-		// 每帧更新函数，我们将在这里处理镜头平滑跟随
-		virtual void Tick(float DeltaTime) override;
+	// 每帧更新函数，我们将在这里处理镜头平滑跟随
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	/*========================================================================

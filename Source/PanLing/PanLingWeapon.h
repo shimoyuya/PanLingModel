@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Particles/ParticleSystem.h"
+#include "Sound/SoundBase.h"
 #include "PanLingWeapon.generated.h"
 
 class UBoxComponent;
@@ -32,6 +34,14 @@ protected:
 
 	// 标记当前是否正在挥刀
 	bool bIsTracing;
+
+	// 击中时的粒子特效
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")
+	UParticleSystem* HitVFX;
+
+	// 击中时的音效
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")
+	USoundBase* HitSound;
 
 public:	
 	// Sets default values for this actor's properties

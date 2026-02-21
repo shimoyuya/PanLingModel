@@ -8,6 +8,8 @@
 #include "CombatComponent.h"
 #include "PanLingWeapon.h"
 #include "Components/WidgetComponent.h"
+#include "PanLingAIController.h"
+#include "BrainComponent.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -92,13 +94,50 @@ float APanLingEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 {
 	// 拦截引擎自带的伤害，将其转化为我们的 AttributeComp 扣血逻辑
 	// 注意传入的 Delta 是负数，所以要加负号：-DamageAmount
-	if (AttributeComp)
+	//if (AttributeComp)
+	//{
+	//	AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
+	//}
+
+	//// 返回实际造成的伤害（给引擎底层用的）
+	//return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 假设你有一个方法获取当前血量，并且敌人还没死
+	if (ActualDamage > 0.0f && AttributeComp->IsAlive())
 	{
 		AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
+
+		// 1. 播放受击动画 (它会自动打断当前正在播放的攻击动画)
+		if (HitReactMontage)
+		{
+			PlayAnimMontage(HitReactMontage);
+		}
+
+		// 2. 停止 AI 行为树一小段时间 (打断它的攻击逻辑)
+		if (APanLingAIController* AIController = Cast<APanLingAIController>(GetController()))
+		{
+			// 获取大脑组件并暂停逻辑，"Hit" 是暂停的原因标签
+			if (AIController->GetBrainComponent())
+			{
+				AIController->GetBrainComponent()->PauseLogic(TEXT("Hit"));
+
+				// 设置一个定时器，在受击动画播放完毕后恢复 AI 逻辑 (假设受击动画长 0.8 秒)
+				FTimerHandle TimerHandle_HitReact;
+				GetWorldTimerManager().SetTimer(TimerHandle_HitReact, [AIController]()
+					{
+						if (AIController && AIController->GetBrainComponent())
+						{
+							AIController->GetBrainComponent()->ResumeLogic(TEXT("Hit"));
+						}
+					}, 0.8f, false); // 这里的 0.8f 建议替换为 HitReactMontage 的实际长度
+			}
+		}
 	}
 
-	// 返回实际造成的伤害（给引擎底层用的）
-	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	return ActualDamage;
+
 }
 
 void APanLingEnemy::OnHealthChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewHealth, float Delta)

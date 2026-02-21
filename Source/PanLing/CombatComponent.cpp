@@ -133,6 +133,12 @@ void UCombatComponent::ResetCombatState()
 	CurrentTarget = nullptr;
 
 	CharacterOwner->GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	APanLingCharacter* MyCharacter = Cast<APanLingCharacter>(CharacterOwner);
+	if (MyCharacter)
+	{
+		MyCharacter->ActionState = EActionState::Unoccupied;
+	}
 }
 
 void UCombatComponent::PerformAttack()

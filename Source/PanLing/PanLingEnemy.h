@@ -49,6 +49,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	UWidgetComponent* LockOnWidgetComp;
 
+	// 受击动画蒙太奇
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UAnimMontage* HitReactMontage;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
