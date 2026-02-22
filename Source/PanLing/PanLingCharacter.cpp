@@ -108,6 +108,9 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		// 绑定锁定按键 (Triggered 表示按下时触发一次)
 		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &APanLingCharacter::ToggleLockOn);
+
+		//闪避
+		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &APanLingCharacter::Dodge);
 	}
 	else
 	{
@@ -175,6 +178,13 @@ void APanLingCharacter::AttackEnd()
 
 float APanLingCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	// 如果正在无敌帧期间，直接免疫伤害！
+	if (bIsInvincible)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("无敌帧生效！免疫伤害！"));
+		return 0.0f;
+	}
+
 	if (AttributeComp)
 	{
 		// 扣血（传入负数的伤害值）
@@ -415,4 +425,33 @@ void APanLingCharacter::ClearLockOn()
 	// 恢复为自由视角的移动模式
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	bUseControllerRotationYaw = false;
+}
+
+void APanLingCharacter::Dodge()
+{
+	// 只有空闲状态才能闪避
+	if (ActionState != EActionState::Unoccupied) return;
+
+	// 尝试扣除精力，如果返回 false 说明精力不够，直接 return
+	if (!AttributeComp || !AttributeComp->ApplyStaminaChange(-DodgeStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("精力不足，无法闪避！"));
+		return;
+	}
+
+	ActionState = EActionState::Dodging;
+	bIsInvincible = true; // 开启无敌帧
+
+	if (DodgeMontage)
+	{
+		PlayAnimMontage(DodgeMontage);
+
+		// 简单处理：假设无敌帧只有 0.4 秒
+		FTimerHandle TimerHandle_Invincibility;
+		GetWorldTimerManager().SetTimer(TimerHandle_Invincibility, [this]()
+			{
+				bIsInvincible = false;
+			}, 0.4f, false);
+		// (更高级的做法是写一个 AnimNotifyState 来精准控制无敌帧的开始和结束帧)
+	}
 }

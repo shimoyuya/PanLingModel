@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h" //
+#include "NiagaraFunctionLibrary.h"
 
 
 // Sets default values
@@ -91,7 +92,7 @@ void APanLingWeapon::DoWeaponTrace()
 				//播放粒子特效 (在具体的击中点 ImpactPoint)
 				if (HitVFX)
 				{
-					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitVFX, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitVFX, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 				}
 
 				// 播放音效

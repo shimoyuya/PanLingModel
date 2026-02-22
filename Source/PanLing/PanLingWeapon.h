@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Particles/ParticleSystem.h"
+#include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
 #include "PanLingWeapon.generated.h"
 
@@ -37,7 +37,7 @@ protected:
 
 	// 击中时的粒子特效
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")
-	UParticleSystem* HitVFX;
+	UNiagaraSystem* HitVFX;
 
 	// 击中时的音效
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")

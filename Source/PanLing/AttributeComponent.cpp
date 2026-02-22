@@ -8,10 +8,12 @@ UAttributeComponent::UAttributeComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = false; // 属性组件不需要每帧 Tick，省性能
+	PrimaryComponentTick.bCanEverTick = true; 
 
 	MaxHealth = 100.0f;
 	Health = MaxHealth;
+
+	bCanRegenStamina = true;
 }
 
 
@@ -20,7 +22,7 @@ void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	
 	
 }
 
@@ -30,7 +32,15 @@ void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	// 如果精力未满，且允许恢复，并且角色还活着
+	if (bCanRegenStamina && Stamina < MaxStamina && IsAlive())
+	{
+		Stamina += StaminaRegenRate * DeltaTime;
+		Stamina = FMath::Clamp(Stamina, 0.0f, MaxStamina);
+
+		// 广播精力更新 (传 0 作为 Delta，因为是平滑更新)
+		OnStaminaChanged.Broadcast(nullptr, this, Stamina, 0.0f);
+	}
 }
 
 bool UAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta)
@@ -64,18 +74,29 @@ bool UAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta
 	return true;
 }
 
-bool UAttributeComponent::IsAlive() const
+bool UAttributeComponent::ApplyStaminaChange(float Delta)
 {
-	return Health > 0.0f;
-}
+	// 只有在扣除精力时才判断是否足够 (Delta < 0)
+	if (Delta < 0.0f && Stamina < FMath::Abs(Delta))
+	{
+		return false; // 精力不足，拒绝执行
+	}
 
-float UAttributeComponent::GetMaxHealth() const
-{
-	return MaxHealth;
-}
+	Stamina += Delta;
+	Stamina = FMath::Clamp(Stamina, 0.0f, MaxStamina);
 
-float UAttributeComponent::GetHealth() const
-{
-	return Health;
+	OnStaminaChanged.Broadcast(nullptr, this, Stamina, Delta);
+
+	// 如果是消耗精力，暂停恢复 1.5 秒
+	if (Delta < 0.0f)
+	{
+		bCanRegenStamina = false;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle_StaminaRegenDelay, [this]()
+			{
+				bCanRegenStamina = true;
+			}, 1.5f, false);
+	}
+
+	return true;
 }
 

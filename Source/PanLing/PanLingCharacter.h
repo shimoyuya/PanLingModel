@@ -23,6 +23,7 @@ enum class EActionState : uint8
 	Unoccupied, // 空闲状态，可以自由移动和做任何事
 	Attacking,  // 攻击中，不能移动或闪避
 	HitReact,   // 受击硬直中，不能做任何事
+	Dodging,	// 翻滚中，有无敌帧
 	Dead        // 死亡
 };
 
@@ -54,6 +55,10 @@ class APanLingCharacter : public ACharacter
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
+
+	//闪避
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DodgeAction;
 
 protected:
 	//属性组件
@@ -115,10 +120,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	FName WeaponSocketName;
 
-	//// 具体的攻击动作 (Montage)，我们下一步会用到
-	//UPROPERTY(EditAnywhere, Category = "Combat")
-	//UAnimMontage* AttackMontage;
-
 	// 攻击输入
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* AttackAction;
@@ -179,5 +180,24 @@ protected:
 
 	// 清除锁定状态
 	void ClearLockOn();
+
+
+	//闪避无敌帧系统
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UAnimMontage* DodgeMontage;
+
+	// 闪避消耗的精力值
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	float DodgeStaminaCost = 25.0f;
+
+	// 标记是否处于无敌帧
+	bool bIsInvincible = false;
+
+public:
+	// 绑定到输入的闪避函数
+	void Dodge();
+
+	
 };
 

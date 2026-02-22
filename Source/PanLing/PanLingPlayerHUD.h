@@ -20,6 +20,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
 
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* StaminaProgressBar;
+
 public:
 	// 初始化函数，用来把玩家的属性组件传进来
 	UFUNCTION(BlueprintCallable)
@@ -29,4 +32,8 @@ protected:
 	// 监听血量变化的毁调函数（签名必须和 Delegate 一致）
 	UFUNCTION()
 	void OnHealthChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewHealth, float Delta);
+
+	// 监听体力值变化的函数
+	UFUNCTION()
+	void OnStaminaChanged(AActor* InstigatorActor, UAttributeComponent* OwningComp, float NewStamina, float Delta);
 };
