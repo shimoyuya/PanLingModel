@@ -95,6 +95,10 @@ protected:
 	UPROPERTY()
 	UPanLingPlayerHUD* PlayerHUDInstance;
 
+	// AI 刺激源组件（让 AI 能稳定听到/看到玩家）
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	class UAIPerceptionStimuliSourceComponent* StimuliSourceComp;
+
 protected:
 
 	virtual void NotifyControllerChanged() override;

@@ -20,6 +20,8 @@
 #include "Kismet/KismetMathLibrary.h" // 用于获取看向目标的旋转 (FindLookAtRotation)
 #include "PanLingEnemy.h"             // 用于识别扫描到的 Actor 是否是敌人
 #include "Perception/AISense_Hearing.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISense_Sight.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -68,6 +70,12 @@ APanLingCharacter::APanLingCharacter()
 	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComp"));
 
 	WeaponSocketName = TEXT("WeaponSocket");
+
+	// 创建并自动注册刺激源，让 AI 知道玩家可以被“看到”和“听到”
+	StimuliSourceComp = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("StimuliSourceComp"));
+	StimuliSourceComp->RegisterForSense(UAISense_Sight::StaticClass());
+	StimuliSourceComp->RegisterForSense(UAISense_Hearing::StaticClass());
+	StimuliSourceComp->RegisterWithPerceptionSystem();
 }
 
 //////////////////////////////////////////////////////////////////////////
