@@ -19,6 +19,7 @@
 #include <Kismet/GameplayStatics.h>
 #include "Kismet/KismetMathLibrary.h" // 用于获取看向目标的旋转 (FindLookAtRotation)
 #include "PanLingEnemy.h"             // 用于识别扫描到的 Actor 是否是敌人
+#include "Perception/AISense_Hearing.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -163,6 +164,9 @@ void APanLingCharacter::Attack()
 	{
 		ActionState = EActionState::Attacking;
 		CombatComp->RequestAttack();
+
+		// 向周围 1500 半径内发射一个噪音事件，音量为 1.0
+		UAISense_Hearing::ReportNoiseEvent(GetWorld(), GetActorLocation(), 1.0f, this, 1500.0f);
 	}
 }
 
@@ -453,5 +457,7 @@ void APanLingCharacter::Dodge()
 				bIsInvincible = false;
 			}, 0.4f, false);
 		// (更高级的做法是写一个 AnimNotifyState 来精准控制无敌帧的开始和结束帧)
+		// 向周围 1000 半径内发射一个噪音事件，音量为 1.0
+		UAISense_Hearing::ReportNoiseEvent(GetWorld(), GetActorLocation(), 1.0f, this, 1000.0f);
 	}
 }

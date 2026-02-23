@@ -10,6 +10,7 @@
 class UBehaviorTree;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
+class UAISenseConfig_Hearing;
 
 UCLASS()
 class PANLING_API APanLingAIController : public AAIController
@@ -36,6 +37,10 @@ protected:
 	// 视觉配置
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	UAISenseConfig_Sight* SightConfig;
+
+	// 听觉配置
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	UAISenseConfig_Hearing* HearingConfig;
 
 	// 当看到或丢失目标时触发的函数
 	UFUNCTION()

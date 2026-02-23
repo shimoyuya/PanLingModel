@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISenseConfig_Hearing.h"
 
 APanLingAIController::APanLingAIController()
 {
@@ -17,16 +18,27 @@ APanLingAIController::APanLingAIController()
 	// 配置视觉参数
 	SightConfig->SightRadius = 1000.0f;       // 能看多远
 	SightConfig->LoseSightRadius = 1200.0f;   // 跑多远会丢失目标
-	SightConfig->PeripheralVisionAngleDegrees = 60.0f; // 视野角度 (120度)
+	SightConfig->PeripheralVisionAngleDegrees = 120.0f; // 视野角度 (120度)
 
 	// 允许感知所有类型的目标（为了简单，这里全开）
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 
+	// 配置听觉感知
+	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
+	HearingConfig->HearingRange = 1500.0f;       // 能听到多远的声音
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+
 	// 将配置应用到感知组件
 	AIPerceptionComp->ConfigureSense(*SightConfig);
+	// 将听觉应用到感知组件中
+	AIPerceptionComp->ConfigureSense(*HearingConfig);
+
 	AIPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
+	
 }
 
 void APanLingAIController::BeginPlay()
@@ -53,20 +65,20 @@ void APanLingAIController::OnPossess(APawn* InPawn)
 
 void APanLingAIController::OnTargetPerceived(AActor* Actor, FAIStimulus Stimulus)
 {
-	// 如果我们有黑板 (Blackboard)，并且看到了东西
-	if (Blackboard)
+	if (Stimulus.WasSuccessfullySensed())
 	{
-		if (Stimulus.WasSuccessfullySensed())
+		// 无论是看到还是听到，都把目标更新到黑板里！
+		if (Blackboard)
 		{
-			// 将看到的目标写入黑板，键名为 "TargetActor"
 			Blackboard->SetValueAsObject(FName("TargetActor"), Actor);
-			UE_LOG(LogTemp, Warning, TEXT("AI: I see you, %s!"), *Actor->GetName());
+			// 可选：把听到的最后位置也记下来，让 AI 走过去看
+			Blackboard->SetValueAsVector(FName("TargetLocation"), Stimulus.StimulusLocation);
 		}
-		else
-		{
-			// 丢失目标，清空黑板
-			Blackboard->ClearValue(FName("TargetActor"));
-			UE_LOG(LogTemp, Warning, TEXT("AI: Target lost."));
-		}
+	}
+	else
+	{
+		// 丢失目标，清空黑板
+		Blackboard->ClearValue(FName("TargetActor"));
+		UE_LOG(LogTemp, Warning, TEXT("AI: Target lost."));
 	}
 }
