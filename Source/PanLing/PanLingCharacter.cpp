@@ -22,6 +22,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "InventoryComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -76,6 +77,9 @@ APanLingCharacter::APanLingCharacter()
 	StimuliSourceComp->RegisterForSense(UAISense_Sight::StaticClass());
 	StimuliSourceComp->RegisterForSense(UAISense_Hearing::StaticClass());
 	StimuliSourceComp->RegisterWithPerceptionSystem();
+
+	// 实例化背包组件
+	InventoryComp = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComp"));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -255,7 +259,7 @@ void APanLingCharacter::PrimaryInteract()
 	GetController()->GetPlayerViewPoint(Location, Rotation);
 
 	// 视线终点 (向前 500 单位)
-	FVector End = Location + (Rotation.Vector() * 500.0f);
+	FVector End = Location + (Rotation.Vector() * 600.0f);
 
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic); // 我们假设宝箱是 WorldDynamic

@@ -14,6 +14,7 @@ class UInputAction;
 struct FInputActionValue;
 class UAttributeComponent;
 class APanLingWeapon;
+class UInventoryComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -203,5 +204,15 @@ public:
 	void Dodge();
 
 	
+	/*背包系统*/
+protected:
+	// 背包组件
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UInventoryComponent* InventoryComp;
+
+public:
+	// 提供一个获取背包组件的接口
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UInventoryComponent* GetInventoryComponent() const { return InventoryComp; }
 };
 
