@@ -7,6 +7,7 @@
 #include "GameFramework/Controller.h"
 #include "DrawDebugHelpers.h" //
 #include "NiagaraFunctionLibrary.h"
+#include "WeaponDataAsset.h"
 
 
 // Sets default values
@@ -23,7 +24,17 @@ APanLingWeapon::APanLingWeapon()
 	MeshComp->SetCollisionProfileName(TEXT("NoCollision"));
 
 	bIsTracing = false;
-	BaseDamage = 20.0f;
+}
+
+void APanLingWeapon::InitializeWeapon(UWeaponDataAsset* InWeaponData)
+{
+	WeaponData = InWeaponData;
+
+	// 如果有数据且有模型，立马更新武器的外观！
+	if (WeaponData && WeaponData->WeaponMesh && MeshComp)
+	{
+		MeshComp->SetStaticMesh(WeaponData->WeaponMesh);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -48,7 +59,7 @@ void APanLingWeapon::StartWeaponTrace()
 
 void APanLingWeapon::DoWeaponTrace()
 {
-	if (!bIsTracing || !MeshComp) return;
+	if (!bIsTracing || !MeshComp || !WeaponData) return; // 确保WeaponData存在
 
 	// 获取我们在蓝图中要在刀剑模型上添加的两个插槽位置：刀根(Start) 和 刀尖(End)
 	FVector TraceStartLoc = MeshComp->GetSocketLocation(FName("TraceStart"));
@@ -87,18 +98,18 @@ void APanLingWeapon::DoWeaponTrace()
 				HitActors.Add(HitActor);
 
 				// 造成伤害
-				UGameplayStatics::ApplyDamage(HitActor, BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyDamage(HitActor, WeaponData->BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
 
 				//播放粒子特效 (在具体的击中点 ImpactPoint)
-				if (HitVFX)
+				if (WeaponData->HitVFX)
 				{
-					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitVFX, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), WeaponData->HitVFX, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 				}
 
 				// 播放音效
-				if (HitSound)
+				if (WeaponData->HitSound)
 				{
-					UGameplayStatics::PlaySoundAtLocation(this, HitSound, Hit.ImpactPoint);
+					UGameplayStatics::PlaySoundAtLocation(this, WeaponData->HitSound, Hit.ImpactPoint);
 				}
 
 				UE_LOG(LogTemp, Warning, TEXT("精准砍中: %s"), *HitActor->GetName());

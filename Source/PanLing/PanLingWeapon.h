@@ -9,6 +9,7 @@
 #include "PanLingWeapon.generated.h"
 
 class UBoxComponent;
+class UWeaponDataAsset;
 
 UCLASS()
 class PANLING_API APanLingWeapon : public AActor
@@ -24,10 +25,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	FName WeaponName;
 
-	// 基础伤害值
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	float BaseDamage = 20.0f;
-
 	// 记录一次攻击中已经击中过的 Actor，防止多帧重复扣血
 	UPROPERTY()
 	TArray<AActor*> HitActors;
@@ -35,21 +32,23 @@ protected:
 	// 标记当前是否正在挥刀
 	bool bIsTracing;
 
-	// 击中时的粒子特效
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")
-	UNiagaraSystem* HitVFX;
-
-	// 击中时的音效
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Effects")
-	USoundBase* HitSound;
-
 public:	
 	// Sets default values for this actor's properties
 	APanLingWeapon();
 
+	// 暴露给外部初始化武器的方法
+	void InitializeWeapon(UWeaponDataAsset* InWeaponData);
+
+	// 获取这把武器的数据 (方便组件调用)
+	UWeaponDataAsset* GetWeaponData() const { return WeaponData; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	// 数据资产
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Data")
+	UWeaponDataAsset* WeaponData;
 
 public:	
 	// Called every frame

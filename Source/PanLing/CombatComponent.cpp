@@ -6,6 +6,7 @@
 #include "PanLingWeapon.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "WeaponDataAsset.h"
 
 // Sets default values for this component's properties
 UCombatComponent::UCombatComponent()
@@ -143,19 +144,25 @@ void UCombatComponent::ResetCombatState()
 
 void UCombatComponent::PerformAttack()
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (OwnerCharacter && ComboMontage)
+	if (!EquippedWeapon) return;
+
+	UWeaponDataAsset* WeaponData = EquippedWeapon->GetWeaponData();
+	if (WeaponData && WeaponData->AttackMontage)
 	{
-		// 在攻击开始时
-		CharacterOwner->GetCharacterMovement()->bOrientRotationToMovement = false;
-		// 每次发起新的攻击动作时，寻找最近的敌人
-		FindNearestTarget();
+		// 获取角色身上的 AnimInstance 并播放属于该武器的攻击蒙太奇
+		if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
+		{
+			// 在攻击开始时
+			CharacterOwner->GetCharacterMovement()->bOrientRotationToMovement = false;
+			// 每次发起新的攻击动作时，寻找最近的敌人
+			FindNearestTarget();
 
-		// 动态生成 Montage Section 的名字，比如 "Attack1", "Attack2"
-		FName SectionName = FName(*FString::Printf(TEXT("Attack%d"), ComboCount));
+			// 动态生成 Montage Section 的名字，比如 "Attack1", "Attack2"
+			FName SectionName = FName(*FString::Printf(TEXT("Attack%d"), ComboCount));
 
-		// 播放蒙太奇，并跳转到对应的 Section
-		OwnerCharacter->PlayAnimMontage(ComboMontage, 1.0f, SectionName);
+			// 播放蒙太奇，并跳转到对应的 Section
+			Character->PlayAnimMontage(WeaponData->AttackMontage, 1.0f, SectionName);
+		}
 	}
 }
 
