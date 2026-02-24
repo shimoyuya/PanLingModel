@@ -110,10 +110,7 @@ float APanLingEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 		AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
 
 		// 1. 播放受击动画 (它会自动打断当前正在播放的攻击动画)
-		if (HitReactMontage)
-		{
-			PlayAnimMontage(HitReactMontage);
-		}
+		PlayDirectionalHitReact(DamageCauser);
 
 		// 2. 停止 AI 行为树一小段时间 (打断它的攻击逻辑)
 		if (APanLingAIController* AIController = Cast<APanLingAIController>(GetController()))
@@ -192,5 +189,59 @@ void APanLingEnemy::HideLockOnUI()
 	if (LockOnWidgetComp)
 	{
 		LockOnWidgetComp->SetVisibility(false);
+	}
+}
+
+void APanLingEnemy::PlayDirectionalHitReact(AActor* DamageCauser)
+{
+	if (!DamageCauser) return;
+
+	// 1. 获取敌人的正前方和正右方向量
+	FVector Forward = GetActorForwardVector();
+	FVector Right = GetActorRightVector();
+
+	// 2. 计算从敌人指向伤害来源（通常是玩家或武器）的向量
+	FVector HitDirection = DamageCauser->GetActorLocation() - GetActorLocation();
+
+	// 忽略 Z 轴（高度）上的差异，我们只关心水平面上的前/后/左/右
+	HitDirection.Z = 0.f;
+
+	// 归一化为长度为 1 的单位向量
+	HitDirection.Normalize();
+
+	// 3. 计算点乘 (Dot Product)
+	// 点乘结果范围是 [-1, 1]。 1代表完全同向，-1代表完全反向，0代表垂直。
+	float ForwardDot = FVector::DotProduct(Forward, HitDirection);
+	float RightDot = FVector::DotProduct(Right, HitDirection);
+
+	// 4. 根据点乘结果选择要播放的蒙太奇
+	UAnimMontage* MontageToPlay = nullptr;
+
+	// 设定一个阈值（比如0.5相当于45度角）
+	if (ForwardDot >= 0.5f)
+	{
+		// 玩家在敌人前方的扇形区域内
+		MontageToPlay = HitReactFront;
+	}
+	else if (ForwardDot <= -0.5f)
+	{
+		// 玩家在敌人后方的扇形区域内
+		MontageToPlay = HitReactBack;
+	}
+	else if (RightDot >= 0.5f)
+	{
+		// 玩家在敌人右侧
+		MontageToPlay = HitReactRight;
+	}
+	else
+	{
+		// 玩家在敌人左侧
+		MontageToPlay = HitReactLeft;
+	}
+
+	// 5. 播放选中的蒙太奇
+	if (MontageToPlay)
+	{
+		PlayAnimMontage(MontageToPlay);
 	}
 }

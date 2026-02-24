@@ -49,9 +49,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	UWidgetComponent* LockOnWidgetComp;
 
-	// 受击动画蒙太奇
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	UAnimMontage* HitReactMontage;
+	// 受击动画蒙太奇 (四个方向)
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|HitReact")
+	UAnimMontage* HitReactFront;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|HitReact")
+	UAnimMontage* HitReactBack;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|HitReact")
+	UAnimMontage* HitReactLeft;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|HitReact")
+	UAnimMontage* HitReactRight;
+
+	// 专门处理并计算受击方向的函数
+	void PlayDirectionalHitReact(AActor* DamageCauser);
 
 public:	
 	// Called every frame
