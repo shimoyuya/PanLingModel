@@ -8,7 +8,8 @@
 #include "DrawDebugHelpers.h" //
 #include "NiagaraFunctionLibrary.h"
 #include "WeaponDataAsset.h"
-
+#include "GameFramework/PlayerController.h" // 播放震动需要用到玩家控制器
+#include "Camera/CameraShakeBase.h"         // 震动类基类
 
 // Sets default values
 APanLingWeapon::APanLingWeapon()
@@ -113,6 +114,33 @@ void APanLingWeapon::DoWeaponTrace()
 				}
 
 				UE_LOG(LogTemp, Warning, TEXT("精准砍中: %s"), *HitActor->GetName());
+
+				// --- 顿帧与屏幕震动 ---
+				// 1. 播放屏幕震动
+				if (WeaponData->HitCameraShake)
+				{
+					// 获取攻击者的玩家控制器
+					APlayerController* PC = Cast<APlayerController>(GetInstigatorController());
+					if (PC)
+					{
+						// 在客户端播放震动
+						PC->ClientStartCameraShake(WeaponData->HitCameraShake);
+					}
+				}
+				// 2. 触发顿帧 (Hit Stop)
+				if (WeaponData->HitStopDuration > 0.0f)
+				{
+					// 设置全局时间膨胀（让游戏变慢）
+					UGameplayStatics::SetGlobalTimeDilation(GetWorld(), WeaponData->HitStopTimeDilation);
+
+					// 【面试考点/干货】：因为游戏全局时间变慢了，所以 UE 内置的 Timer 也会跟着变慢。
+					// 想要在现实世界的 0.05 秒后恢复，定时器的 Delay 需要乘以当前的膨胀系数。
+					// 比如：现实要等 0.05 秒，游戏流速是 0.1，那么游戏内只需要过去 0.005 秒。
+					float DilatedDelay = WeaponData->HitStopDuration * WeaponData->HitStopTimeDilation;
+
+					// 设定定时器，时间到后调用 ResetHitStop
+					GetWorldTimerManager().SetTimer(TimerHandle_HitStop, this, &APanLingWeapon::ResetHitStop, DilatedDelay, false);
+				}
 			}
 		}
 	}
@@ -128,3 +156,8 @@ void APanLingWeapon::ClearHitActors()
 	HitActors.Empty();
 }
 
+void APanLingWeapon::ResetHitStop()
+{
+	// 恢复全局时间流速为正常的 1.0f
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+}

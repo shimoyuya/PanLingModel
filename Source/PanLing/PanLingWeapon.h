@@ -32,6 +32,9 @@ protected:
 	// 标记当前是否正在挥刀
 	bool bIsTracing;
 
+	// 用于顿帧恢复的定时器句柄
+	FTimerHandle TimerHandle_HitStop;
+
 public:	
 	// Sets default values for this actor's properties
 	APanLingWeapon();
@@ -41,6 +44,9 @@ public:
 
 	// 获取这把武器的数据 (方便组件调用)
 	UWeaponDataAsset* GetWeaponData() const { return WeaponData; }
+
+	// 恢复时间流速的函数
+	void ResetHitStop();
 
 protected:
 	// Called when the game starts or when spawned
