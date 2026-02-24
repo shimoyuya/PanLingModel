@@ -43,6 +43,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-
+	// 供外部（如玩家丢弃物品时）设置这件物品的行名称
+	UFUNCTION(BlueprintCallable, Category = "Item Data")
+	void SetItemData(FName NewRowName);
 
 };

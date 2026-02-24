@@ -210,6 +210,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* InventoryComp;
 
+	// 用于空手装备时，生成的武器基类
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TSubclassOf<class APanLingWeapon> BaseWeaponClass;
+
+	// 用于丢弃物品时，在地上生成的拾取物基类
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TSubclassOf<class APickupBase> PickupClass;
+
 public:
 	// 提供一个获取背包组件的接口
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -218,5 +226,9 @@ public:
 	// 供 UI 调用的使用物品接口
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void UseItem(const FPanLingItemInfo& ItemInfo);
+
+	// 丢弃物品接口
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void DropItem(const FPanLingItemInfo& ItemInfo, int32 InventoryIndex);
 };
 

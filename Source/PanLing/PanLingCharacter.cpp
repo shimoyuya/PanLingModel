@@ -23,6 +23,7 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISense_Sight.h"
 #include "InventoryComponent.h"
+#include "PickupBase.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -476,16 +477,63 @@ void APanLingCharacter::Dodge()
 
 void APanLingCharacter::UseItem(const FPanLingItemInfo& ItemInfo)
 {
-	// 判断这个物品是否包含武器数据，并且玩家当前手里有武器实例
-	if (ItemInfo.WeaponData && GetEquippedWeapon())
+	if (ItemInfo.WeaponData)
 	{
-		// 动态替换手里武器的数据资产（模型、特效、伤害会自动改变！）
-		GetEquippedWeapon()->InitializeWeapon(ItemInfo.WeaponData);
-		UE_LOG(LogTemp, Warning, TEXT("装备了武器"));
-		if (GEngine)
+		if (GetEquippedWeapon())
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Equipped Weapon: %s"), *ItemInfo.ItemName.ToString()));
+			// 1. 如果手里已经有武器，直接替换数据
+			GetEquippedWeapon()->InitializeWeapon(ItemInfo.WeaponData);
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, TEXT("成功切换武器"));
+		}
+		else
+		{
+			// 2. 如果手里是空的，生成一把新武器！
+			if (BaseWeaponClass)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				// 在世界中生成武器 Actor
+				APanLingWeapon* NewWeapon = GetWorld()->SpawnActor<APanLingWeapon>(BaseWeaponClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+
+				if (NewWeapon)
+				{
+					NewWeapon->InitializeWeapon(ItemInfo.WeaponData);
+					// 调用你的战斗组件的装备接口（或者你原本怎么挂载武器的就怎么调用）
+					// 注意：这里请根据你 CombatComp 实际的函数名修改，比如 EquipWeapon(NewWeapon)
+					CombatComp->EquipWeapon(NewWeapon);
+					if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("成功装备新武器"));
+				}
+			}
 		}
 	}
+
+	
 	// 以后如果 ItemInfo 里加了“血瓶恢复量”，这里还可以写吃药加血的逻辑
+}
+
+void APanLingCharacter::DropItem(const FPanLingItemInfo& ItemInfo, int32 InventoryIndex)
+{
+	// 1. 从背包中移除
+	if (InventoryComp)
+	{
+		InventoryComp->RemoveItemAtIndex(InventoryIndex);
+	}
+
+	// 2. 在玩家前方生成掉落物
+	if (PickupClass)
+	{
+		// 计算生成位置：玩家正前方 100 单位，高度稍微抬高一点防止卡地里
+		FVector SpawnLocation = GetActorLocation() + GetActorForwardVector() * 100.f;
+		SpawnLocation.Z += 50.f;
+
+		FActorSpawnParameters SpawnParams;
+		APickupBase* DroppedItem = GetWorld()->SpawnActor<APickupBase>(PickupClass, SpawnLocation, GetActorRotation(), SpawnParams);
+
+		if (DroppedItem)
+		{
+			// 把物品的 ID 传给地上的掉落物
+			DroppedItem->SetItemData(ItemInfo.ItemID);
+		}
+	}
 }

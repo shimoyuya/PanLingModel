@@ -63,3 +63,9 @@ void APickupBase::Tick(float DeltaTime)
 
 }
 
+void APickupBase::SetItemData(FName NewRowName)
+{
+	ItemRowName = NewRowName;
+	// 注意：如果你想要物品丢在地上时模型也会变，可以进一步在这里读取数据表并修改 MeshComp->SetStaticMesh()
+}
+
