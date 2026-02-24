@@ -214,5 +214,9 @@ public:
 	// 提供一个获取背包组件的接口
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	UInventoryComponent* GetInventoryComponent() const { return InventoryComp; }
+
+	// 供 UI 调用的使用物品接口
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void UseItem(const FPanLingItemInfo& ItemInfo);
 };
 

@@ -184,7 +184,7 @@ void APanLingCharacter::Attack()
 
 APanLingWeapon* APanLingCharacter::GetEquippedWeapon() const
 {
-	return nullptr;
+	return CombatComp->GetEquippedWeapon();
 }
 
 void APanLingCharacter::AttackEnd()
@@ -268,7 +268,7 @@ void APanLingCharacter::PrimaryInteract()
 	// 发射射线 (Line Trace)
 	// 如果你想检测更宽的范围，可以用 SphereTraceSingle
 	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, Location, End, ObjectQueryParams);
-
+	
 	// 绘制调试线 (绿色表示击中，红色表示未击中)
 	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
 	DrawDebugLine(GetWorld(), Location, End, LineColor, false, 2.0f, 0, 2.0f);
@@ -472,4 +472,20 @@ void APanLingCharacter::Dodge()
 		// 向周围 1000 半径内发射一个噪音事件，音量为 1.0
 		UAISense_Hearing::ReportNoiseEvent(GetWorld(), GetActorLocation(), 1.0f, this, 1000.0f);
 	}
+}
+
+void APanLingCharacter::UseItem(const FPanLingItemInfo& ItemInfo)
+{
+	// 判断这个物品是否包含武器数据，并且玩家当前手里有武器实例
+	if (ItemInfo.WeaponData && GetEquippedWeapon())
+	{
+		// 动态替换手里武器的数据资产（模型、特效、伤害会自动改变！）
+		GetEquippedWeapon()->InitializeWeapon(ItemInfo.WeaponData);
+		UE_LOG(LogTemp, Warning, TEXT("装备了武器"));
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow, FString::Printf(TEXT("Equipped Weapon: %s"), *ItemInfo.ItemName.ToString()));
+		}
+	}
+	// 以后如果 ItemInfo 里加了“血瓶恢复量”，这里还可以写吃药加血的逻辑
 }
