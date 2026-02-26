@@ -10,6 +10,7 @@
 #include "WeaponDataAsset.h"
 #include "GameFramework/PlayerController.h" // 播放震动需要用到玩家控制器
 #include "Camera/CameraShakeBase.h"         // 震动类基类
+#include "PanLingDamageNumberActor.h"
 
 // Sets default values
 APanLingWeapon::APanLingWeapon()
@@ -100,6 +101,29 @@ void APanLingWeapon::DoWeaponTrace()
 
 				// 造成伤害
 				UGameplayStatics::ApplyDamage(HitActor, WeaponData->BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+
+				// --- 生成浮动伤害数字 ---
+				if (DamageNumberClass)
+				{
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+					// 在具体的击中点(ImpactPoint)稍微往上抬一点的位置生成，避免和特效重叠
+					FVector SpawnLocation = Hit.ImpactPoint + FVector(0.f, 0.f, 30.f);
+
+					APanLingDamageNumberActor* DamageActor = GetWorld()->SpawnActor<APanLingDamageNumberActor>(
+						DamageNumberClass,
+						SpawnLocation,
+						FRotator::ZeroRotator,
+						SpawnParams
+					);
+
+					if (DamageActor)
+					{
+						// 把你的武器基础伤害传进去
+						DamageActor->ShowDamage(WeaponData->BaseDamage);
+					}
+				}
 
 				//播放粒子特效 (在具体的击中点 ImpactPoint)
 				if (WeaponData->HitVFX)

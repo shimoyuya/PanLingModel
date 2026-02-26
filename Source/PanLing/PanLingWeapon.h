@@ -10,6 +10,7 @@
 
 class UBoxComponent;
 class UWeaponDataAsset;
+class APanLingDamageNumberActor;
 
 UCLASS()
 class PANLING_API APanLingWeapon : public AActor
@@ -34,6 +35,10 @@ protected:
 
 	// 用于顿帧恢复的定时器句柄
 	FTimerHandle TimerHandle_HitStop;
+
+	// 在编辑器中配置要生成的伤害数字蓝图类
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<APanLingDamageNumberActor> DamageNumberClass;
 
 public:	
 	// Sets default values for this actor's properties
