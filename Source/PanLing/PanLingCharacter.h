@@ -15,6 +15,7 @@ struct FInputActionValue;
 class UAttributeComponent;
 class APanLingWeapon;
 class UInventoryComponent;
+class UPanLingSkillComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -230,5 +231,16 @@ public:
 	// 丢弃物品接口
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void DropItem(const FPanLingItemInfo& ItemInfo, int32 InventoryIndex);
+
+	/* 技能系统 */
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPanLingSkillComponent* SkillComp;
+
+	// 技能 1 的输入
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* Skill1Action;
+
+	void UseSkill1();
 };
 

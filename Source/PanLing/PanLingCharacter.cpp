@@ -24,6 +24,7 @@
 #include "Perception/AISense_Sight.h"
 #include "InventoryComponent.h"
 #include "PickupBase.h"
+#include "PanLingSkillComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -81,6 +82,8 @@ APanLingCharacter::APanLingCharacter()
 
 	// 实例化背包组件
 	InventoryComp = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComp"));
+	// 实例化技能组件
+	SkillComp = CreateDefaultSubobject<UPanLingSkillComponent>(TEXT("SkillComp"));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -125,6 +128,9 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		//闪避
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &APanLingCharacter::Dodge);
+
+		//技能1
+		EnhancedInputComponent->BindAction(Skill1Action, ETriggerEvent::Started, this, &APanLingCharacter::UseSkill1);
 	}
 	else
 	{
@@ -535,5 +541,17 @@ void APanLingCharacter::DropItem(const FPanLingItemInfo& ItemInfo, int32 Invento
 			// 把物品的 ID 传给地上的掉落物
 			DroppedItem->SetItemData(ItemInfo.ItemID);
 		}
+	}
+}
+
+void APanLingCharacter::UseSkill1()
+{
+	// 只能在空闲时和攻击时放技能 (和你的攻击逻辑一样)
+	if ((ActionState == EActionState::Unoccupied || ActionState == EActionState::Attacking) && SkillComp)
+	{
+		// 调用第 0 个槽位的技能
+		SkillComp->CastSkillAtIndex(0);
+		// 可选：你也可以在这里把 ActionState 改为 EActionState::Attacking
+		
 	}
 }
