@@ -55,6 +55,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill")
 	virtual void CastSkill(ACharacter* Caster);
 
+	// 获取剩余冷却时间（秒）
+	UFUNCTION(BlueprintPure, Category = "Skill|UI")
+	float GetRemainingCooldown() const;
+
+	// 获取冷却比例（返回 0.0 到 1.0 之间的值，完美适配进度条 UI）
+	UFUNCTION(BlueprintPure, Category = "Skill|UI")
+	float GetCooldownRatio() const;
+
 protected:
 	// 供蓝图子类重写的具体技能表现 (比如发射火球、生成特效)
 	// BlueprintNativeEvent 允许 C++ 有默认实现，同时蓝图也能重写

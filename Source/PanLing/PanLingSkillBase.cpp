@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 // 引入你自己的属性组件头文件，用于扣除精力
 #include "AttributeComponent.h"
+#include "TimerManager.h"
 
 UWorld* UPanLingSkillBase::GetWorld() const
 {
@@ -59,6 +60,26 @@ void UPanLingSkillBase::CastSkill(ACharacter* Caster)
 	{
 		World->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UPanLingSkillBase::FinishCooldown, CooldownDuration, false);
 	}
+}
+
+float UPanLingSkillBase::GetRemainingCooldown() const
+{
+	// 如果不在冷却中，或者获取不到世界，直接返回 0
+	if (!bIsOnCooldown || !GetWorld())
+	{
+		return 0.0f;
+	}
+
+	// 从定时器管理器中获取该句柄的剩余时间
+	return GetWorld()->GetTimerManager().GetTimerRemaining(CooldownTimerHandle);
+}
+
+float UPanLingSkillBase::GetCooldownRatio() const
+{
+	if (CooldownDuration <= 0.0f) return 0.0f;
+
+	// 计算比例：剩余时间 / 总时间
+	return GetRemainingCooldown() / CooldownDuration;
 }
 
 void UPanLingSkillBase::OnSkillExecuted_Implementation(ACharacter* Caster)
