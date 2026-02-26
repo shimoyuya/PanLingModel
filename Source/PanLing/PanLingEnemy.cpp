@@ -10,6 +10,7 @@
 #include "Components/WidgetComponent.h"
 #include "PanLingAIController.h"
 #include "BrainComponent.h"
+#include "GameFramework/Controller.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -92,16 +93,6 @@ void APanLingEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 float APanLingEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	// 拦截引擎自带的伤害，将其转化为我们的 AttributeComp 扣血逻辑
-	// 注意传入的 Delta 是负数，所以要加负号：-DamageAmount
-	//if (AttributeComp)
-	//{
-	//	AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
-	//}
-
-	//// 返回实际造成的伤害（给引擎底层用的）
-	//return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	// 假设你有一个方法获取当前血量，并且敌人还没死
@@ -148,6 +139,27 @@ void APanLingEnemy::OnHealthChanged(AActor* InstigatorActor, UAttributeComponent
 		if (!AttributeComp->IsAlive())
 		{
 			UE_LOG(LogTemp, Error, TEXT("Enemy DIED!"));
+
+			// 找到是谁杀了我们 (EventInstigator / DamageCauser)
+			APawn* InstigatorPawn = Cast<APawn>(InstigatorActor);
+			if (!InstigatorPawn && InstigatorActor)
+			{
+				// 备用方案：如果 EventInstigator 为空，尝试从伤害制造者获取
+				InstigatorPawn = Cast<APawn>(InstigatorActor->GetInstigator());
+			}
+
+			if (InstigatorPawn)
+			{
+				// 获取玩家身上的属性组件
+				UAttributeComponent* PlayerAttrComp = InstigatorPawn->FindComponentByClass<UAttributeComponent>();
+				if (PlayerAttrComp)
+				{
+					// 发放经验奖励！
+					PlayerAttrComp->AddEXP(EXPReward);
+
+					UE_LOG(LogTemp, Warning, TEXT("击杀敌人，获得 %f 经验！"), EXPReward);
+				}
+			}
 
 			// 死亡逻辑：关闭碰撞，停止移动，甚至可以直接销毁或者播放死亡动画
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

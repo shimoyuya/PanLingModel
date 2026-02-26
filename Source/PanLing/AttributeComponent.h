@@ -6,9 +6,14 @@
 #include "Components/ActorComponent.h"
 #include "AttributeComponent.generated.h"
 
+//血量
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, AActor*, InstigatorActor, class UAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
-// 精力改变委托，用于更新 UI
+// 体力值改变委托，用于更新 UI
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnStaminaChanged, AActor*, InstigatorActor, UAttributeComponent*, OwningComp, float, NewStamina, float, Delta);
+//等级
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLevelChanged, int32, NewLevel, int32, MaxLevel);
+//经验值
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEXPChanged, float, CurrentEXP, float, MaxEXP);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PANLING_API UAttributeComponent : public UActorComponent
@@ -89,4 +94,36 @@ protected:
 	// 控制是否暂停恢复 (比如刚闪避完/攻击完，停顿1秒再恢复)
 	bool bCanRegenStamina;
 	FTimerHandle TimerHandle_StaminaRegenDelay;
+
+	// --- 养成系统 (Progression) ---
+public:
+	// 添加经验值的对外接口
+	UFUNCTION(BlueprintCallable, Category = "Attributes|Progression")
+	void AddEXP(float EXPAmount);
+
+	// 委托：当经验值变化时广播
+	UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+	FOnEXPChanged OnEXPChanged;
+
+	// 委托：当等级变化时广播
+	UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+	FOnLevelChanged OnLevelChanged;
+
+protected:
+	// 当前等级
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Progression")
+	int32 Level = 1;
+
+	// 最大等级上限
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Progression")
+	int32 MaxLevel = 100;
+
+	// 当前经验值
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Progression")
+	float CurrentEXP = 0.0f;
+
+	// 升级所需的经验值上限 (初始值)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Progression")
+	float MaxEXP = 100.0f;
+
 };

@@ -65,6 +65,10 @@ protected:
 	// 专门处理并计算受击方向的函数
 	void PlayDirectionalHitReact(AActor* DamageCauser);
 
+	// 击杀该敌人奖励的经验值
+	UPROPERTY(EditDefaultsOnly, Category = "Reward")
+	float EXPReward = 50.0f;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

@@ -100,3 +100,51 @@ bool UAttributeComponent::ApplyStaminaChange(float Delta)
 	return true;
 }
 
+void UAttributeComponent::AddEXP(float EXPAmount)
+{
+	// 如果传入的经验值无效，或者已经满级，直接返回
+	if (EXPAmount <= 0.0f || Level >= MaxLevel) return;
+
+	CurrentEXP += EXPAmount;
+
+	// 使用 while 循环处理可能连续升级的情况
+	bool bLeveledUp = false;
+	while (CurrentEXP >= MaxEXP && Level < MaxLevel)
+	{
+		CurrentEXP -= MaxEXP; // 扣除升级所需的经验
+		Level++;              // 等级+1
+		bLeveledUp = true;
+
+		// 1. 提升属性上限 (你可以后续把它改成读取数据表 UDataTable，现在先用简单的公式)
+		MaxHealth += 20.0f;
+		MaxStamina += 10.0f;
+
+		// 2. 升级时恢复满血满状态
+		Health = MaxHealth;
+		Stamina = MaxStamina;
+
+		// 3. 增加下一级所需的经验值 (例如每级需求变成上一级的 1.2 倍)
+		MaxEXP *= 1.2f;
+
+		// 广播等级提升事件
+		OnLevelChanged.Broadcast(Level, MaxLevel);
+	}
+
+	// 如果达到满级，把经验条锁定在最大值
+	if (Level >= MaxLevel)
+	{
+		CurrentEXP = MaxEXP;
+	}
+
+	// 广播经验值变化事件 (UI 进度条需要)
+	OnEXPChanged.Broadcast(CurrentEXP, MaxEXP);
+
+	// 如果升级了，别忘了通知 UI 更新当前的满血满状态
+	if (bLeveledUp)
+	{
+		// 假设你的 OnHealthChanged 签名是 (Actor, AttributeComp, NewHealth, Delta)
+		OnHealthChanged.Broadcast(nullptr, this, Health, 20.0f);
+		OnStaminaChanged.Broadcast(nullptr, this, Stamina, MaxStamina);
+	}
+}
+
