@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "AttributeComponent.generated.h"
 
+class UPanLingEffectBase;
+
 //血量
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, AActor*, InstigatorActor, class UAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
 // 体力值改变委托，用于更新 UI
@@ -126,4 +128,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Progression")
 	float MaxEXP = 100.0f;
 
+	/* Buff系统 */
+protected:
+	// 使用 UPROPERTY 标记数组，保证实例化的 UObject 不会被 UE 的垃圾回收（GC）清理掉
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PanLing|Effects")
+	TArray<UPanLingEffectBase*> ActiveEffects;
+
+public:
+	// 给角色应用一个新的 Buff
+	UFUNCTION(BlueprintCallable, Category = "PanLing|Effects")
+	void ApplyEffect(TSubclassOf<UPanLingEffectBase> EffectClass);
+
+	// 手动移除一个特定的 Buff（如：吃解药移除中毒状态）
+	UFUNCTION(BlueprintCallable, Category = "PanLing|Effects")
+	void RemoveEffect(UPanLingEffectBase* EffectToRemove);
 };

@@ -2,6 +2,7 @@
 
 
 #include "AttributeComponent.h"
+#include "PanLingEffectBase.h"
 
 // Sets default values for this component's properties
 UAttributeComponent::UAttributeComponent()
@@ -31,6 +32,20 @@ void UAttributeComponent::BeginPlay()
 void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// 逆序遍历正在生效的 Buff 数组 (逆序遍历是为了在移除元素时防止数组越界奔溃)
+	for (int32 i = ActiveEffects.Num() - 1; i >= 0; --i)
+	{
+		if (ActiveEffects[i])
+		{
+			// 更新 Buff，如果返回 false 说明过期了
+			if (!ActiveEffects[i]->UpdateEffect(DeltaTime))
+			{
+				ActiveEffects[i]->EndEffect();
+				ActiveEffects.RemoveAt(i);
+			}
+		}
+	}
 
 	// 如果精力未满，且允许恢复，并且角色还活着
 	if (bCanRegenStamina && Stamina < MaxStamina && IsAlive())
@@ -145,6 +160,29 @@ void UAttributeComponent::AddEXP(float EXPAmount)
 		// 假设你的 OnHealthChanged 签名是 (Actor, AttributeComp, NewHealth, Delta)
 		OnHealthChanged.Broadcast(nullptr, this, Health, 20.0f);
 		OnStaminaChanged.Broadcast(nullptr, this, Stamina, MaxStamina);
+	}
+}
+
+void UAttributeComponent::ApplyEffect(TSubclassOf<UPanLingEffectBase> EffectClass)
+{
+	if (!EffectClass) return;
+
+	// 创建 Buff 的实例化对象，并将 This (属性组件) 设为它的 Outer
+	UPanLingEffectBase* NewEffect = NewObject<UPanLingEffectBase>(this, EffectClass);
+
+	if (NewEffect)
+	{
+		ActiveEffects.Add(NewEffect);
+		NewEffect->StartEffect(this); // 启动 Buff 初始化逻辑
+	}
+}
+
+void UAttributeComponent::RemoveEffect(UPanLingEffectBase* EffectToRemove)
+{
+	if (EffectToRemove && ActiveEffects.Contains(EffectToRemove))
+	{
+		EffectToRemove->EndEffect();
+		ActiveEffects.RemoveSingle(EffectToRemove);
 	}
 }
 
