@@ -31,6 +31,11 @@ void UAttributeComponent::BeginPlay()
 	DefenseData.Recalculate();
 
 	CurrentHealth = MaxHealthData.CurrentValue;
+
+	// 游戏开始时广播一次初始属性，让 UI 能获取到第一手数据
+	OnAttributeValueChanged.Broadcast(FName("MaxHealth"), MaxHealthData.CurrentValue);
+	OnAttributeValueChanged.Broadcast(FName("AttackPower"), AttackPowerData.CurrentValue);
+	OnAttributeValueChanged.Broadcast(FName("Defense"), DefenseData.CurrentValue);
 	
 }
 
@@ -212,6 +217,9 @@ void UAttributeComponent::AddModifierToAttribute(FName AttributeName, FPanLingMo
         TargetAttribute->Modifiers.Add(NewModifier);
         TargetAttribute->Recalculate();
 
+		// 广播属性变化
+		OnAttributeValueChanged.Broadcast(AttributeName, TargetAttribute->CurrentValue);
+
         // [额外逻辑] 如果修改的是最大生命值，需要确保当前生命值不超过上限等...
 		if (AttributeName == FName("MaxHealth"))
 		{
@@ -247,6 +255,9 @@ void UAttributeComponent::RemoveModifierFromAttribute(FName AttributeName, FName
 
         // 移除后重新计算
         TargetAttribute->Recalculate();
+
+		// 广播属性变化
+		OnAttributeValueChanged.Broadcast(AttributeName, TargetAttribute->CurrentValue);
 
 		// 卸下装备时，如果当前血量超过了上限，需要裁剪
 		if (AttributeName == FName("MaxHealth"))

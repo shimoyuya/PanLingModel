@@ -91,6 +91,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnStaminaChanged, AActor*, Instig
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLevelChanged, int32, NewLevel, int32, MaxLevel);
 //经验值
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEXPChanged, float, CurrentEXP, float, MaxEXP);
+// 声明一个通用的属性变化委托：参数1是属性名(如 "AttackPower")，参数2是新的属性值
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAttributeValueChanged, FName, AttributeName, float, NewValue);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PANLING_API UAttributeComponent : public UActorComponent
@@ -120,6 +122,18 @@ public:
     // 移除指定来源的所有修改器（例如卸下武器时调用）
     UFUNCTION(BlueprintCallable, Category = "Attributes|Modifiers")
     void RemoveModifierFromAttribute(FName AttributeName, FName SourceID);
+
+	/* 通用属性函数 */
+	// 属性变化事件
+	UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+	FOnAttributeValueChanged OnAttributeValueChanged;
+
+	// 添加 Getter 函数，方便 UI 初始化时获取当前值
+	UFUNCTION(BlueprintPure, Category = "Attributes")
+	float GetAttackPower() const { return AttackPowerData.CurrentValue; }
+
+	UFUNCTION(BlueprintPure, Category = "Attributes")
+	float GetDefense() const { return DefenseData.CurrentValue; }
 
 protected:
 	// Called when the game starts
