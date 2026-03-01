@@ -11,10 +11,12 @@ UAttributeComponent::UAttributeComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true; 
 
-	MaxHealth = 100.0f;
-	Health = MaxHealth;
-
 	bCanRegenStamina = true;
+
+	// 初始化一些默认基础值
+	MaxHealthData.BaseValue = 100.f;
+	AttackPowerData.BaseValue = 10.f;
+	DefenseData.BaseValue = 5.f;
 }
 
 
@@ -23,7 +25,12 @@ void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	// 游戏开始时计算一次最终值
+	MaxHealthData.Recalculate();
+	AttackPowerData.Recalculate();
+	DefenseData.Recalculate();
+
+	CurrentHealth = MaxHealthData.CurrentValue;
 	
 }
 
@@ -66,10 +73,10 @@ bool UAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta
 		return false;
 	}
 
-	float OldHealth = Health;
+	float OldHealth = CurrentHealth;
 
 	// 计算新血量，并限制在 [0, MaxHealth] 之间
-	float NewHealth = FMath::Clamp(Health + Delta, 0.0f, MaxHealth);
+	float NewHealth = FMath::Clamp(CurrentHealth + Delta, 0.0f, MaxHealthData.CurrentValue);
 
 	// 计算实际变化量
 	float ActualDelta = NewHealth - OldHealth;
@@ -80,11 +87,11 @@ bool UAttributeComponent::ApplyHealthChange(AActor* InstigatorActor, float Delta
 		return false;
 	}
 
-	Health = NewHealth;
+	CurrentHealth = NewHealth;
 
 	// 广播事件：告诉所有人（UI, Character）血量变了
 	// Broadcast 的参数必须和头文件中 DECLARE 的参数一一对应
-	OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
+	OnHealthChanged.Broadcast(InstigatorActor, this, CurrentHealth, ActualDelta);
 
 	return true;
 }
@@ -131,11 +138,12 @@ void UAttributeComponent::AddEXP(float EXPAmount)
 		bLeveledUp = true;
 
 		// 1. 提升属性上限 (你可以后续把它改成读取数据表 UDataTable，现在先用简单的公式)
-		MaxHealth += 20.0f;
+		MaxHealthData.BaseValue += 20.0f;
+		MaxHealthData.Recalculate();
 		MaxStamina += 10.0f;
 
 		// 2. 升级时恢复满血满状态
-		Health = MaxHealth;
+		CurrentHealth = MaxHealthData.CurrentValue;
 		Stamina = MaxStamina;
 
 		// 3. 增加下一级所需的经验值 (例如每级需求变成上一级的 1.2 倍)
@@ -158,7 +166,7 @@ void UAttributeComponent::AddEXP(float EXPAmount)
 	if (bLeveledUp)
 	{
 		// 假设你的 OnHealthChanged 签名是 (Actor, AttributeComp, NewHealth, Delta)
-		OnHealthChanged.Broadcast(nullptr, this, Health, 20.0f);
+		OnHealthChanged.Broadcast(nullptr, this, CurrentHealth, 20.0f);
 		OnStaminaChanged.Broadcast(nullptr, this, Stamina, MaxStamina);
 	}
 }
@@ -186,3 +194,69 @@ void UAttributeComponent::RemoveEffect(UPanLingEffectBase* EffectToRemove)
 	}
 }
 
+void UAttributeComponent::AddModifierToAttribute(FName AttributeName, FPanLingModifier NewModifier)
+{
+    // 根据传入的名字找到对应的属性数据
+    FPanLingAttributeData* TargetAttribute = nullptr;
+
+    if (AttributeName == FName("MaxHealth")) TargetAttribute = &MaxHealthData;
+    else if (AttributeName == FName("AttackPower")) TargetAttribute = &AttackPowerData;
+    else if (AttributeName == FName("Defense")) TargetAttribute = &DefenseData;
+
+    if (TargetAttribute)
+    {
+		// 记录修改前的最大生命值
+		float OldMaxValue = TargetAttribute->CurrentValue;
+
+        // 添加修改器并重新计算
+        TargetAttribute->Modifiers.Add(NewModifier);
+        TargetAttribute->Recalculate();
+
+        // [额外逻辑] 如果修改的是最大生命值，需要确保当前生命值不超过上限等...
+		if (AttributeName == FName("MaxHealth"))
+		{
+			// 例如：最大生命值增加了，我们把增加的差值也加到当前血量上（类似吃撑血药的效果）
+			float MaxHealthDiff = TargetAttribute->CurrentValue - OldMaxValue;
+			if (MaxHealthDiff > 0)
+			{
+				CurrentHealth += MaxHealthDiff;
+			}
+			// 确保当前血量不超过新的上限
+			CurrentHealth = FMath::Clamp(CurrentHealth, 0.0f, TargetAttribute->CurrentValue);
+
+			// 通知 UI 刷新血条
+			OnHealthChanged.Broadcast(nullptr, this, CurrentHealth, MaxHealthDiff);
+		}
+    }
+}
+
+void UAttributeComponent::RemoveModifierFromAttribute(FName AttributeName, FName SourceID)
+{
+    FPanLingAttributeData* TargetAttribute = nullptr;
+
+    if (AttributeName == FName("MaxHealth")) TargetAttribute = &MaxHealthData;
+    else if (AttributeName == FName("AttackPower")) TargetAttribute = &AttackPowerData;
+    else if (AttributeName == FName("Defense")) TargetAttribute = &DefenseData;
+
+    if (TargetAttribute)
+    {
+        // 移除所有 SourceID 匹配的修改器
+        TargetAttribute->Modifiers.RemoveAll([SourceID](const FPanLingModifier& Mod) {
+            return Mod.SourceID == SourceID;
+        });
+
+        // 移除后重新计算
+        TargetAttribute->Recalculate();
+
+		// 卸下装备时，如果当前血量超过了上限，需要裁剪
+		if (AttributeName == FName("MaxHealth"))
+		{
+			if (CurrentHealth > TargetAttribute->CurrentValue)
+			{
+				CurrentHealth = TargetAttribute->CurrentValue;
+				// 通知 UI 刷新血条
+				OnHealthChanged.Broadcast(nullptr, this, CurrentHealth, 0.f);
+			}
+		}
+    }
+}
