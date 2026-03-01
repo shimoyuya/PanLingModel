@@ -25,6 +25,7 @@
 #include "InventoryComponent.h"
 #include "PickupBase.h"
 #include "PanLingSkillComponent.h"
+#include "WeaponDataAsset.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -485,6 +486,28 @@ void APanLingCharacter::UseItem(const FPanLingItemInfo& ItemInfo)
 {
 	if (ItemInfo.WeaponData)
 	{
+		// 【新增逻辑 1：移除旧武器的属性加成】
+		// 如果我们之前已经装备了武器（ID不是 None），就先把它提供的攻击力扣除
+		if (CurrentEquippedWeaponID != NAME_None && AttributeComp)
+		{
+			AttributeComp->RemoveModifierFromAttribute(FName("AttackPower"), CurrentEquippedWeaponID);
+		}
+
+		// 【新增逻辑 2：添加新武器的属性加成】
+		if (AttributeComp)
+		{
+			
+			// 创建一个修改器：数值为武器数据资产中的 BaseDamage，类型为加法，来源ID为物品的 ItemID
+			FPanLingModifier WeaponMod(ItemInfo.WeaponData->BaseDamage, EPanLingModType::Add, ItemInfo.ItemID);
+
+			// 将修改器应用到“AttackPower”属性上
+			AttributeComp->AddModifierToAttribute(FName("AttackPower"), WeaponMod);
+
+			// 更新当前装备的武器 ID
+			CurrentEquippedWeaponID = ItemInfo.ItemID;
+		}
+
+
 		if (GetEquippedWeapon())
 		{
 			// 1. 如果手里已经有武器，直接替换数据
@@ -520,6 +543,25 @@ void APanLingCharacter::UseItem(const FPanLingItemInfo& ItemInfo)
 
 void APanLingCharacter::DropItem(const FPanLingItemInfo& ItemInfo, int32 InventoryIndex)
 {
+	// 【新增逻辑：如果丢弃的正好是当前手里拿着的武器】
+	if (ItemInfo.ItemID == CurrentEquippedWeaponID)
+	{
+		// 移除武器带来的攻击力加成
+		if (AttributeComp)
+		{
+			AttributeComp->RemoveModifierFromAttribute(FName("AttackPower"), CurrentEquippedWeaponID);
+		}
+		// 重置当前武器 ID
+		CurrentEquippedWeaponID = NAME_None;
+
+		// 销毁手里的武器模型，让玩家变为空手状态
+		if (GetEquippedWeapon())
+		{
+			GetEquippedWeapon()->Destroy();
+			CombatComp->EquipWeapon(nullptr);
+		}
+	}
+
 	// 1. 从背包中移除
 	if (InventoryComp)
 	{

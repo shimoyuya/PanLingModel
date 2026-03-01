@@ -219,6 +219,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	TSubclassOf<class APickupBase> PickupClass;
 
+	// 记录当前装备武器的 ItemID，方便我们在替换武器时卸载旧的属性加成
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Equipment")
+	FName CurrentEquippedWeaponID;
+
 public:
 	// 提供一个获取背包组件的接口
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
