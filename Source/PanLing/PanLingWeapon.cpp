@@ -5,12 +5,13 @@
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Controller.h"
-#include "DrawDebugHelpers.h" //
+#include "DrawDebugHelpers.h" 
 #include "NiagaraFunctionLibrary.h"
 #include "WeaponDataAsset.h"
 #include "GameFramework/PlayerController.h" // 播放震动需要用到玩家控制器
 #include "Camera/CameraShakeBase.h"         // 震动类基类
 #include "PanLingDamageNumberActor.h"
+#include "AttributeComponent.h"
 
 // Sets default values
 APanLingWeapon::APanLingWeapon()
@@ -73,6 +74,23 @@ void APanLingWeapon::DoWeaponTrace()
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(GetOwner()); // 绝不能砍到自己
 
+	// 【新增核心逻辑】：动态计算实际伤害
+	// 1. 先用武器的基础伤害作为保底默认值
+	float ActualDamage = WeaponData->BaseDamage;
+
+	// 2. 尝试获取武器主人的属性组件
+	AActor* WeaponOwner = GetOwner();
+	if (WeaponOwner)
+	{
+		// 使用 FindComponentByClass 可以完美解耦！不管拿武器的是玩家还是未来的高级AI，只要有这个组件就能算伤害
+		UAttributeComponent* OwnerAttributeComp = WeaponOwner->FindComponentByClass<UAttributeComponent>();
+		if (OwnerAttributeComp)
+		{
+			// 3. 用主人的动态面板攻击力，替换掉武器的静态基础伤害
+			ActualDamage = OwnerAttributeComp->GetAttackPower();
+		}
+	}
+
 	TArray<FHitResult> HitResults;
 
 	// 从刀根向刀尖扫出一个胶囊体范围
@@ -100,7 +118,7 @@ void APanLingWeapon::DoWeaponTrace()
 				HitActors.Add(HitActor);
 
 				// 造成伤害
-				UGameplayStatics::ApplyDamage(HitActor, WeaponData->BaseDamage, GetInstigatorController(), this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyDamage(HitActor, ActualDamage, GetInstigatorController(), this, UDamageType::StaticClass());
 
 				// --- 生成浮动伤害数字 ---
 				if (DamageNumberClass)
@@ -121,7 +139,7 @@ void APanLingWeapon::DoWeaponTrace()
 					if (DamageActor)
 					{
 						// 把你的武器基础伤害传进去
-						DamageActor->ShowDamage(WeaponData->BaseDamage);
+						DamageActor->ShowDamage(ActualDamage);
 					}
 				}
 
