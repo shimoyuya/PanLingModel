@@ -69,6 +69,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reward")
 	float EXPReward = 50.0f;
 
+	// 用于生成浮动伤害的 Actor 类
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class APanLingDamageNumberActor> DamageNumberClass;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

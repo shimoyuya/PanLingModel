@@ -11,6 +11,7 @@
 #include "PanLingAIController.h"
 #include "BrainComponent.h"
 #include "GameFramework/Controller.h"
+#include "PanLingDamageNumberActor.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -98,7 +99,49 @@ float APanLingEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 	// 假设你有一个方法获取当前血量，并且敌人还没死
 	if (ActualDamage > 0.0f && AttributeComp->IsAlive())
 	{
-		AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
+		// ==========================================
+		// 【新增：护甲防御减伤核心逻辑】
+		// ==========================================
+
+		// 1. 获取怪物当前的防御力 (你在 AttributeComponent 初始化时给了 5.f 的基础防御)
+		float EnemyDefense = AttributeComp->GetDefense();
+
+		// 2. 使用 RPG 经典减伤公式： 最终伤害 = 原始伤害 * (100 / (100 + 防御力))
+		// 如果你想加点花样，防止防御力为负数导致计算错误，可以加个 Max 限制
+		EnemyDefense = FMath::Max(0.0f, EnemyDefense);
+		float DamageMultiplier = 100.0f / (100.0f + EnemyDefense);
+
+		// 3. 计算最终伤害
+		float FinalDamage = ActualDamage * DamageMultiplier;
+
+		// 打印日志，方便你调试数值
+		UE_LOG(LogTemp, Warning, TEXT("玩家攻击: %f, 怪物护甲: %f, 实际扣血: %f"), ActualDamage, EnemyDefense, FinalDamage);
+
+		// 4. 扣除最终计算后的伤害 (记得传入负数)
+		AttributeComp->ApplyHealthChange(DamageCauser, -FinalDamage);
+
+		// 【新增：由受击者自己抛出真实的伤害跳字】
+		if (DamageNumberClass)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			// 在怪物头顶稍微偏上的位置生成
+			FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 100.f);
+
+			APanLingDamageNumberActor* DamageActor = GetWorld()->SpawnActor<APanLingDamageNumberActor>(
+				DamageNumberClass,
+				SpawnLocation,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
+
+			if (DamageActor)
+			{
+				// 显示护甲减免后的真实伤害！
+				DamageActor->ShowDamage(FinalDamage);
+			}
+		}
 
 		// 1. 播放受击动画 (它会自动打断当前正在播放的攻击动画)
 		PlayDirectionalHitReact(DamageCauser);

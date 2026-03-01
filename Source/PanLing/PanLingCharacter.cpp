@@ -211,8 +211,19 @@ float APanLingCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dama
 
 	if (AttributeComp)
 	{
-		// 扣血（传入负数的伤害值）
-		AttributeComp->ApplyHealthChange(DamageCauser, -DamageAmount);
+		// 1. 获取怪物当前的防御力 (你在 AttributeComponent 初始化时给了 5.f 的基础防御)
+		float CharaterDefense = AttributeComp->GetDefense();
+
+		// 2. 使用 RPG 经典减伤公式： 最终伤害 = 原始伤害 * (100 / (100 + 防御力))
+		// 如果你想加点花样，防止防御力为负数导致计算错误，可以加个 Max 限制
+		CharaterDefense = FMath::Max(0.0f, CharaterDefense);
+		float DamageMultiplier = 100.0f / (100.0f + CharaterDefense);
+
+		// 3. 计算最终伤害
+		float FinalDamage = DamageAmount * DamageMultiplier;
+
+		// 4. 扣除最终计算后的伤害 (记得传入负数)
+		AttributeComp->ApplyHealthChange(DamageCauser, -FinalDamage);
 
 		// 可选：打印日志看自己被扣了多少血
 		UE_LOG(LogTemp, Warning, TEXT("Player Took Damage! Current Health: %f"), AttributeComp->GetHealth()); // 注意这里最好写个 GetHealth() 函数，或者直接看日志
