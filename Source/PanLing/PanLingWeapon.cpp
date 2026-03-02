@@ -45,6 +45,7 @@ void APanLingWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	InitializeWeapon(WeaponData);
 }
 
 // Called every frame
