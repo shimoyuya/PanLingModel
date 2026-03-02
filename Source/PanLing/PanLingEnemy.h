@@ -25,6 +25,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// 怪物的种类 ID (例如 "Slime", "Goblin")
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	FName EnemyID;
+
 	// 敌人的属性组件（血量）
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAttributeComponent* AttributeComp;

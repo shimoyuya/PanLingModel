@@ -27,6 +27,7 @@
 #include "PanLingSkillComponent.h"
 #include "WeaponDataAsset.h"
 #include "PanLingSaveGame.h"
+#include "PanLingQuestComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -86,6 +87,9 @@ APanLingCharacter::APanLingCharacter()
 	InventoryComp = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComp"));
 	// 实例化技能组件
 	SkillComp = CreateDefaultSubobject<UPanLingSkillComponent>(TEXT("SkillComp"));
+
+	//任务组件
+	QuestComp = CreateDefaultSubobject<UPanLingQuestComponent>(TEXT("QuestComp"));
 }
 
 //////////////////////////////////////////////////////////////////////////

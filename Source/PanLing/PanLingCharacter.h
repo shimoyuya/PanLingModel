@@ -17,6 +17,7 @@ class APanLingWeapon;
 class UInventoryComponent;
 class UPanLingSkillComponent;
 class UPanLingSaveGame;
+class UPanLingQuestComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -257,5 +258,10 @@ public:
 	// 读档
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	void LoadPlayerGame();
+
+	/* 任务系统 */
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPanLingQuestComponent* QuestComp;
 };
 

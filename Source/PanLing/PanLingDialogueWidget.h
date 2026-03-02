@@ -10,6 +10,8 @@
 class UTextBlock;
 class UButton;
 
+// 声明一个带有一个 FName 参数（任务ID）的动态多播委托
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnQuestAcceptedSignature, FName, QuestID);
 /**
  对话的 UI 基类
  */
@@ -42,6 +44,10 @@ public:
 	// 对外接口：NPC调用这个函数来启动UI并传入数据表
 	UFUNCTION(BlueprintCallable, Category = "Dialogue")
 	void StartDialogue(class UDataTable* DialogueTable, FName StartRowName, class APlayerController* PC);
+
+	// 暴露给外部绑定的委托事件
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnQuestAcceptedSignature OnQuestAccepted;
 
 private:
 	// 缓存在内存里的状态

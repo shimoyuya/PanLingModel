@@ -14,6 +14,8 @@
 #include "PanLingDamageNumberActor.h"
 #include "PanLingGameMode.h"
 #include "DamageNumberPoolComponent.h"
+#include "PanLingQuestComponent.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -195,6 +197,15 @@ void APanLingEnemy::OnHealthChanged(AActor* InstigatorActor, UAttributeComponent
 				}
 			}
 
+			if (InstigatorPawn)
+			{
+				// 找到玩家身上的任务组件
+				if (UPanLingQuestComponent* QuestComp = InstigatorPawn->FindComponentByClass<UPanLingQuestComponent>())
+				{
+					// 告诉任务组件：“我 (EnemyID) 被干掉了！”
+					QuestComp->OnEnemyKilled(EnemyID);
+				}
+			}
 			// 死亡逻辑：关闭碰撞，停止移动，甚至可以直接销毁或者播放死亡动画
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			GetCharacterMovement()->DisableMovement();

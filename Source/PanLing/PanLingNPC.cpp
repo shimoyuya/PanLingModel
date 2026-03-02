@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "PanLingDialogueWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "PanLingQuestComponent.h"
 
 // Sets default values
 APanLingNPC::APanLingNPC()
@@ -46,6 +47,14 @@ void APanLingNPC::Interact_Implementation(APawn* InstigatorPawn)
 		UPanLingDialogueWidget* DialogueWidget = CreateWidget<UPanLingDialogueWidget>(PC, DialogueWidgetClass);
 		if (DialogueWidget)
 		{
+			// 从交互者（玩家）身上寻找任务组件
+			UPanLingQuestComponent* QuestComp = InstigatorPawn->FindComponentByClass<UPanLingQuestComponent>();
+			if (QuestComp)
+			{
+				// 将 UI 的 OnQuestAccepted 事件，绑定到 QuestComp 的 AddQuest 函数上
+				DialogueWidget->OnQuestAccepted.AddDynamic(QuestComp, &UPanLingQuestComponent::AddQuest);
+			}
+
 			DialogueWidget->AddToViewport();
 
 			// 调用我们刚才在 UI 里写的公开接口，把数据表和起始行传给它

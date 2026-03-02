@@ -59,8 +59,11 @@ void UPanLingDialogueWidget::UpdateUI()
 		// 如果这一句包含任务，我们可以在这里通过委托(Delegate)把 QuestID 发送给玩家的任务组件 (后续补充)
 		if (Row->bHasQuest)
 		{
-			// TODO: Fire GiveQuest Event
-			UE_LOG(LogTemp, Warning, TEXT("NPC gives quest: %s"), *Row->QuestID.ToString());
+			if (Row->bHasQuest && !Row->QuestID.IsNone())
+			{
+				// 将任务ID像广播一样发送出去！所有监听了这个频道的对象都会收到。
+				OnQuestAccepted.Broadcast(Row->QuestID);
+			}
 		}
 
 		// 把下一行的ID存起来，等玩家按 Next 按钮时再去读
