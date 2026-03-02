@@ -10,6 +10,7 @@ APanLingDamageNumberActor::APanLingDamageNumberActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
+	bIsActive = false;
 
 	DamageWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("DamageWidgetComp"));
 	RootComponent = DamageWidgetComp;
@@ -27,8 +28,8 @@ void APanLingDamageNumberActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 设置寿命：1.5秒后自动销毁自己，防止内存泄漏！
-	SetLifeSpan(1.5f);
+	// 游戏一开始，所有的飘字刚生成时都应该是隐藏、未激活状态
+	DeactivateDamageNumber();
 }
 
 // Called every frame
@@ -53,3 +54,30 @@ void APanLingDamageNumberActor::ShowDamage(float DamageAmount)
 	}
 }
 
+void APanLingDamageNumberActor::ActivateDamageNumber(FVector Location, float DamageAmount)
+{
+	bIsActive = true;
+
+	// 1. 移动到指定位置
+	SetActorLocation(Location);
+
+	// 2. 取消隐藏，启用更新
+	SetActorHiddenInGame(false);
+	SetActorTickEnabled(true);
+
+	// 3. 调用蓝图事件去更新 UI 上的文字和播放动画
+	ShowDamage(DamageAmount);
+
+	// 4. 设置一个定时器，比如 1.5 秒后自动回收这个飘字（而不是 Destroy！）
+	FTimerHandle ReturnTimerHandle;
+	GetWorldTimerManager().SetTimer(ReturnTimerHandle, this, &APanLingDamageNumberActor::DeactivateDamageNumber, 1.5f, false);
+}
+
+void APanLingDamageNumberActor::DeactivateDamageNumber()
+{
+	bIsActive = false;
+
+	// 隐藏模型/UI，并关闭更新，彻底节省性能
+	SetActorHiddenInGame(true);
+	SetActorTickEnabled(false);
+}

@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -13,6 +13,9 @@ class APanLingGameMode : public AGameModeBase
 
 public:
 	APanLingGameMode();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool")
+	class UDamageNumberPoolComponent* DamageNumberPool;
 };
 
 

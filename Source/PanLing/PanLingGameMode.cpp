@@ -1,8 +1,9 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "PanLingGameMode.h"
 #include "PanLingCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "DamageNumberPoolComponent.h"
 
 APanLingGameMode::APanLingGameMode()
 {
@@ -12,4 +13,6 @@ APanLingGameMode::APanLingGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
+	DamageNumberPool = CreateDefaultSubobject<UDamageNumberPoolComponent>(TEXT("DamageNumberPool"));
 }

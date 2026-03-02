@@ -12,6 +12,8 @@
 #include "BrainComponent.h"
 #include "GameFramework/Controller.h"
 #include "PanLingDamageNumberActor.h"
+#include "PanLingGameMode.h"
+#include "DamageNumberPoolComponent.h"
 
 // Sets default values
 APanLingEnemy::APanLingEnemy()
@@ -120,27 +122,16 @@ float APanLingEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEv
 		// 4. 扣除最终计算后的伤害 (记得传入负数)
 		AttributeComp->ApplyHealthChange(DamageCauser, -FinalDamage);
 
-		// 【新增：由受击者自己抛出真实的伤害跳字】
-		if (DamageNumberClass)
+		// 【由受击者自己抛出真实的伤害跳字】
+		// 获取当前的 GameMode
+		if (APanLingGameMode* GM = Cast<APanLingGameMode>(GetWorld()->GetAuthGameMode()))
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
 			// 在怪物头顶稍微偏上的位置生成
 			FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 100.f);
 
-			APanLingDamageNumberActor* DamageActor = GetWorld()->SpawnActor<APanLingDamageNumberActor>(
-				DamageNumberClass,
-				SpawnLocation,
-				FRotator::ZeroRotator,
-				SpawnParams
-			);
-
-			if (DamageActor)
-			{
-				// 显示护甲减免后的真实伤害！
-				DamageActor->ShowDamage(FinalDamage);
-			}
+			// 向对象池申请飘字
+			GM->DamageNumberPool->SpawnDamageNumber(SpawnLocation, FinalDamage);
+				
 		}
 
 		// 1. 播放受击动画 (它会自动打断当前正在播放的攻击动画)
