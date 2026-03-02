@@ -55,3 +55,47 @@ void UInventoryComponent::RemoveItemAtIndex(int32 Index)
 	}
 }
 
+TArray<FName> UInventoryComponent::GetInventoryItemIDs() const
+{
+	TArray<FName> SavedIDs;
+	// 遍历当前背包，把所有物品的 ItemID 提取出来
+	for (const FPanLingItemInfo& Item : Items)
+	{
+		SavedIDs.Add(Item.ItemID);
+	}
+	return SavedIDs;
+}
+
+void UInventoryComponent::LoadInventoryFromIDs(const TArray<FName>& SavedIDs)
+{
+	// 1. 读档前先清空当前背包
+	Items.Empty();
+
+	// 2. 确保我们在蓝图中配置了数据表
+	if (ItemDataTable)
+	{
+		for (const FName& ID : SavedIDs)
+		{
+			// 根据 ID 去数据表里寻找对应的行数据
+			// "LoadInventoryContext" 只是一个用于报错时定位的上下文文本
+			FPanLingItemInfo* RowInfo = ItemDataTable->FindRow<FPanLingItemInfo>(ID, TEXT("LoadInventoryContext"));
+
+			if (RowInfo)
+			{
+				// 如果找到了，就把完整的结构体重新加入背包
+				Items.Add(*RowInfo);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("读档警告：数据表里找不到物品 ID: %s"), *ID.ToString());
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("InventoryComponent 读档失败：ItemDataTable 未配置！"));
+	}
+
+	// 3. 通知 UI 重新绘制背包格子
+	OnInventoryUpdated.Broadcast();
+}

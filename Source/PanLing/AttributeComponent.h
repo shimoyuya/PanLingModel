@@ -249,4 +249,20 @@ public:
 	void RemoveEffect(UPanLingEffectBase* EffectToRemove);
 
 
+	/* 读档存档系统 */
+public:
+	// 获取数据的接口
+	UFUNCTION(BlueprintCallable, Category = "Attributes|Progression")
+	int32 GetLevel() const { return Level; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes|Progression")
+	float GetCurrentEXP() const { return CurrentEXP; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes|Progression")
+	float GetMaxEXP() const { return MaxEXP; }
+
+	// 读档时用来覆盖当前数据的接口
+	UFUNCTION(BlueprintCallable, Category = "Attributes|Progression")
+	void LoadProgressionData(int32 SavedLevel, float SavedCurrentEXP, float SavedMaxEXP);
+
 };

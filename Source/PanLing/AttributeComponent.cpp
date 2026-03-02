@@ -271,3 +271,22 @@ void UAttributeComponent::RemoveModifierFromAttribute(FName AttributeName, FName
 		}
     }
 }
+
+void UAttributeComponent::LoadProgressionData(int32 SavedLevel, float SavedCurrentEXP, float SavedMaxEXP)
+{
+	Level = SavedLevel;
+	CurrentEXP = SavedCurrentEXP;
+	MaxEXP = SavedMaxEXP;
+
+	// 读档后，重新计算等级带来的属性加成 (这里简单模拟你升级时的逻辑)
+	float AddedHealth = (Level - 1) * 20.0f;
+	MaxHealthData.BaseValue = 100.f + AddedHealth;
+	MaxHealthData.Recalculate();
+
+	CurrentHealth = MaxHealthData.CurrentValue;
+
+	// 广播事件通知 UI 更新面板
+	OnLevelChanged.Broadcast(Level, MaxLevel);
+	OnEXPChanged.Broadcast(CurrentEXP, MaxEXP);
+	OnHealthChanged.Broadcast(nullptr, this, CurrentHealth, 0.f);
+}

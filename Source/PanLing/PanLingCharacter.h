@@ -16,6 +16,7 @@ class UAttributeComponent;
 class APanLingWeapon;
 class UInventoryComponent;
 class UPanLingSkillComponent;
+class UPanLingSaveGame;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -246,5 +247,15 @@ protected:
 	UInputAction* Skill1Action;
 
 	void UseSkill1();
+
+	/* 存档与读档系统 */
+public:
+	// 存档
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void SavePlayerGame();
+
+	// 读档
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void LoadPlayerGame();
 };
 

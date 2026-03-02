@@ -26,6 +26,7 @@
 #include "PickupBase.h"
 #include "PanLingSkillComponent.h"
 #include "WeaponDataAsset.h"
+#include "PanLingSaveGame.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -606,5 +607,88 @@ void APanLingCharacter::UseSkill1()
 		SkillComp->CastSkillAtIndex(0);
 		// 可选：你也可以在这里把 ActionState 改为 EActionState::Attacking
 		
+	}
+}
+
+void APanLingCharacter::SavePlayerGame()
+{
+	// 1. 创建一个 SaveGame 容器实例
+	UPanLingSaveGame* SaveGameInst = Cast<UPanLingSaveGame>(UGameplayStatics::CreateSaveGameObject(UPanLingSaveGame::StaticClass()));
+
+	if (SaveGameInst)
+	{
+		// 2. 将当前玩家身上的数据写入容器
+		SaveGameInst->PlayerTransform = GetActorTransform();
+
+		if (AttributeComp)
+		{
+			SaveGameInst->Level = AttributeComp->GetLevel();
+			SaveGameInst->CurrentEXP = AttributeComp->GetCurrentEXP();
+			SaveGameInst->MaxEXP = AttributeComp->GetMaxEXP();
+		}
+
+		SaveGameInst->EquippedWeaponID = CurrentEquippedWeaponID;
+
+		// 【新增】：将背包的 ID 列表导出并存入容器
+		if (InventoryComp)
+		{
+			SaveGameInst->InventoryItemIDs = InventoryComp->GetInventoryItemIDs();
+		}
+
+		// 3. 将容器保存到本地硬盘
+		if (UGameplayStatics::SaveGameToSlot(SaveGameInst, SaveGameInst->SaveSlotName, SaveGameInst->UserIndex))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("游戏保存成功！"));
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("游戏保存成功！"));
+		}
+	}
+}
+
+void APanLingCharacter::LoadPlayerGame()
+{
+	// 1. 检查是否存在对应的存档文件
+	if (UGameplayStatics::DoesSaveGameExist(TEXT("PlayerSlot_01"), 0))
+	{
+		// 2. 从硬盘加载存档数据并转为我们的类
+		UPanLingSaveGame* SaveGameInst = Cast<UPanLingSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSlot_01"), 0));
+
+		if (SaveGameInst)
+		{
+			// 3. 将数据恢复到玩家身上
+			SetActorTransform(SaveGameInst->PlayerTransform);
+
+			if (AttributeComp)
+			{
+				AttributeComp->LoadProgressionData(SaveGameInst->Level, SaveGameInst->CurrentEXP, SaveGameInst->MaxEXP);
+			}
+
+			// 【新增】：恢复背包内容
+			if (InventoryComp)
+			{
+				InventoryComp->LoadInventoryFromIDs(SaveGameInst->InventoryItemIDs);
+			}
+
+			// 【优化】：自动重新装备存档里拿在手上的武器
+			if (SaveGameInst->EquippedWeaponID != NAME_None && InventoryComp)
+			{
+				// 因为之前写了 UseItem 是传入 FPanLingItemInfo，我们可以遍历刚刚恢复的背包，找到那把武器并使用它
+				const TArray<FPanLingItemInfo>& RestoredItems = InventoryComp->GetItems();
+				for (const FPanLingItemInfo& Item : RestoredItems)
+				{
+					if (Item.ItemID == SaveGameInst->EquippedWeaponID)
+					{
+						UseItem(Item); // 直接调用你已有的装备函数！属性、模型瞬间完美恢复！
+						break;
+					}
+				}
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("游戏读档成功！"));
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan, TEXT("游戏读档成功！"));
+		}
+	}
+	else
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("未找到存档！"));
 	}
 }

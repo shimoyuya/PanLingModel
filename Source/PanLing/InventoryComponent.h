@@ -78,4 +78,19 @@ public:
 	// 委托：供 UI 蓝图绑定，一旦触发 UI 就重新绘制格子
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
+
+	/* 存档与读档 */
+protected:
+	// 【新增】：配置一个数据表，用于读档时通过 ID 还原物品
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+	UDataTable* ItemDataTable;
+
+public:
+	// 【新增】：导出当前背包的所有物品ID，供存档使用
+	UFUNCTION(BlueprintCallable, Category = "Inventory|SaveLoad")
+	TArray<FName> GetInventoryItemIDs() const;
+
+	// 【新增】：从存档的ID列表恢复背包内容
+	UFUNCTION(BlueprintCallable, Category = "Inventory|SaveLoad")
+	void LoadInventoryFromIDs(const TArray<FName>& SavedIDs);
 };
