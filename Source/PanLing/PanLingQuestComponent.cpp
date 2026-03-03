@@ -4,6 +4,7 @@
 #include "PanLingQuestComponent.h"
 #include "PanLingCharacter.h" // 引入玩家，为了给玩家加经验
 #include "AttributeComponent.h" // 引入属性组件，用于加经验
+#include "PanLingSaveGame.h"
 
 // Sets default values for this component's properties
 UPanLingQuestComponent::UPanLingQuestComponent()
@@ -137,4 +138,28 @@ TArray<FPanLingQuestDisplayInfo> UPanLingQuestComponent::GetActiveQuestsInfo()
 	}
 
 	return Result;
+}
+
+void UPanLingQuestComponent::SaveQuestData(UPanLingSaveGame* SaveObject)
+{
+	if (SaveObject)
+	{
+		// 将组件内的数据，直接赋值给存档对象里的变量
+		SaveObject->SavedActiveQuests = ActiveQuestsProgress;
+		SaveObject->SavedCompletedQuests = CompletedQuestsHistory;
+
+		UE_LOG(LogTemp, Log, TEXT("任务数据已写入存档对象。"));
+	}
+}
+
+void UPanLingQuestComponent::LoadQuestData(UPanLingSaveGame* SaveObject)
+{
+	if (SaveObject)
+	{
+		// 将存档对象里的变量，覆盖回组件内
+		ActiveQuestsProgress = SaveObject->SavedActiveQuests;
+		CompletedQuestsHistory = SaveObject->SavedCompletedQuests;
+
+		UE_LOG(LogTemp, Log, TEXT("任务数据已从存档加载完成！"));
+	}
 }

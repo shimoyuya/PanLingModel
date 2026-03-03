@@ -46,4 +46,12 @@ public:
 	 UPROPERTY(VisibleAnywhere, Category = "SaveData|Inventory")
 	 TArray<FName> InventoryItemIDs;
 
+	 // --- 任务系统存档数据 ---
+	// 保存当前正在进行中的任务及击杀进度
+	 UPROPERTY(VisibleAnywhere, Category = "SaveData|Quest")
+	 TMap<FName, int32> SavedActiveQuests;
+
+	 // 保存已经完成的任务历史（主线防重复）
+	 UPROPERTY(VisibleAnywhere, Category = "SaveData|Quest")
+	 TArray<FName> SavedCompletedQuests;
 };

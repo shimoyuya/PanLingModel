@@ -57,5 +57,9 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	// 将当前任务状态保存到存档对象中
+	void SaveQuestData(class UPanLingSaveGame* SaveObject);
+
+	// 从存档对象中加载任务状态
+	void LoadQuestData(class UPanLingSaveGame* SaveObject);
 };

@@ -651,6 +651,12 @@ void APanLingCharacter::SavePlayerGame()
 			SaveGameInst->InventoryItemIDs = InventoryComp->GetInventoryItemIDs();
 		}
 
+		// --- 新增：保存任务数据 ---
+		if (QuestComp && SaveGameInst)
+		{
+			QuestComp->SaveQuestData(SaveGameInst);
+		}
+
 		// 3. 将容器保存到本地硬盘
 		if (UGameplayStatics::SaveGameToSlot(SaveGameInst, SaveGameInst->SaveSlotName, SaveGameInst->UserIndex))
 		{
@@ -697,6 +703,12 @@ void APanLingCharacter::LoadPlayerGame()
 						break;
 					}
 				}
+			}
+
+			// --- 新增：读取任务数据 ---
+			if (QuestComp && SaveGameInst)
+			{
+				QuestComp->LoadQuestData(SaveGameInst);
 			}
 
 			UE_LOG(LogTemp, Warning, TEXT("游戏读档成功！"));
