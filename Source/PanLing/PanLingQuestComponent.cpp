@@ -97,3 +97,29 @@ void UPanLingQuestComponent::OnEnemyKilled(FName EnemyKilledID)
 		ActiveQuestsProgress.Remove(CompletedID);
 	}
 }
+
+TArray<FPanLingQuestDisplayInfo> UPanLingQuestComponent::GetActiveQuestsInfo()
+{
+	TArray<FPanLingQuestDisplayInfo> Result;
+
+	if (!QuestDataTable) return Result;
+
+	// 遍历当前进行中的任务字典
+	for (auto& Pair : ActiveQuestsProgress)
+	{
+		FPanLingQuestDisplayInfo Info;
+		Info.QuestID = Pair.Key;
+		Info.CurrentKills = Pair.Value;
+
+		// 去数据表查一下这个任务的要求总数是多少
+		FPanLingQuestData* QuestRow = QuestDataTable->FindRow<FPanLingQuestData>(Pair.Key, TEXT(""));
+		if (QuestRow)
+		{
+			Info.RequiredKills = QuestRow->RequiredKills;
+		}
+
+		Result.Add(Info);
+	}
+
+	return Result;
+}

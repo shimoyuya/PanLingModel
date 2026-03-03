@@ -33,6 +33,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnQuestCompletedSignature OnQuestCompleted;
 
+	// 获取当前所有活跃任务的进度信息
+	UFUNCTION(BlueprintCallable, Category = "Quest")
+	TArray<FPanLingQuestDisplayInfo> GetActiveQuestsInfo();
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

@@ -30,6 +30,7 @@
 #include "PanLingQuestComponent.h"
 #include "PanLingQuestNoticeWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "PanLingQuestListWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -139,6 +140,9 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 		//技能1
 		EnhancedInputComponent->BindAction(Skill1Action, ETriggerEvent::Started, this, &APanLingCharacter::UseSkill1);
+
+		//任务列表
+		EnhancedInputComponent->BindAction(QuestAction, ETriggerEvent::Started, this, &APanLingCharacter::ToggleQuestList);
 	}
 	else
 	{
@@ -721,6 +725,47 @@ void APanLingCharacter::HandleQuestCompleted(FName QuestID, float RewardEXP)
 				// 传递数据并播放动画
 				NoticeWidget->PlayQuestCompletedAnim(QuestID.ToString(), RewardEXP);
 			}
+		}
+	}
+}
+
+void APanLingCharacter::ToggleQuestList()
+{
+	// 如果 UI 类没有配置，直接返回
+	if (!QuestListWidgetClass) return;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	// 如果实例不存在，则创建它
+	if (!QuestListWidgetInstance)
+	{
+		QuestListWidgetInstance = CreateWidget<UPanLingQuestListWidget>(PC, QuestListWidgetClass);
+	}
+
+	if (QuestListWidgetInstance)
+	{
+		// 检查它是否已经在屏幕上
+		if (QuestListWidgetInstance->IsInViewport())
+		{
+			// 关闭 UI，恢复游戏控制
+			QuestListWidgetInstance->RemoveFromParent();
+			PC->SetInputMode(FInputModeGameOnly());
+			PC->bShowMouseCursor = false;
+		}
+		else
+		{
+			// 打开 UI
+			QuestListWidgetInstance->AddToViewport();
+
+			// 通知 UI 读取组件数据并刷新列表
+			QuestListWidgetInstance->RefreshList(QuestComp);
+
+			// 切换为 UI 模式并显示鼠标
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(QuestListWidgetInstance->TakeWidget());
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = true;
 		}
 	}
 }

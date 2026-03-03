@@ -19,6 +19,7 @@ class UPanLingSkillComponent;
 class UPanLingSaveGame;
 class UPanLingQuestComponent;
 class UPanLingQuestNoticeWidget;
+class UPanLingQuestListWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -64,6 +65,10 @@ class APanLingCharacter : public ACharacter
 	//闪避
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* DodgeAction;
+
+	//任务
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* QuestAction;
 
 protected:
 	//属性组件
@@ -272,5 +277,17 @@ protected:
 	// 回调函数：处理任务完成的广播
 	UFUNCTION()
 	void HandleQuestCompleted(FName QuestID, float RewardEXP);
+
+	// 配置：任务列表 UI 类
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Quest")
+	TSubclassOf<UPanLingQuestListWidget> QuestListWidgetClass;
+
+	// 缓存在内存中的实例
+	UPROPERTY()
+	UPanLingQuestListWidget* QuestListWidgetInstance;
+
+	// 切换任务列表显示/隐藏
+	UFUNCTION(BlueprintCallable, Category = "Quest")
+	void ToggleQuestList();
 };
 

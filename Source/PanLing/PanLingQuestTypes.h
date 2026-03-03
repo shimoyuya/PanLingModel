@@ -28,3 +28,19 @@ struct FPanLingQuestData : public FTableRowBase
 
 	// 这里以后还可以扩展奖励的物品ID: FName RewardItemID...
 };
+
+// 用于传给 UI 显示的任务进度信息
+USTRUCT(BlueprintType)
+struct FPanLingQuestDisplayInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FName QuestID;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	int32 CurrentKills = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	int32 RequiredKills = 0;
+};
