@@ -32,16 +32,29 @@ void UPanLingQuestComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UPanLingQuestComponent::AddQuest(FName QuestID)
 {
-	// 检查是否已经接取过这个任务
-	if (!ActiveQuestsProgress.Contains(QuestID))
+	// 1. 如果任务已经在进行中了，不允许重复接取
+	if (ActiveQuestsProgress.Contains(QuestID)){return;}
+
+	// 2. 如果任务曾经被完成过，我们需要检查它是否是“可重复任务”
+	if (CompletedQuestsHistory.Contains(QuestID))
 	{
-		ActiveQuestsProgress.Add(QuestID , 0);
+		if (QuestDataTable)
+		{
+			// 去数据表查这个任务的配置
+			FPanLingQuestData* QuestRow = QuestDataTable->FindRow<FPanLingQuestData>(QuestID, TEXT(""));
 
-		// 打印日志：用于我们在编辑器里确认接取成功
-		UE_LOG(LogTemp, Warning, TEXT("⭐⭐⭐ 成功接取任务: %s ⭐⭐⭐"), *QuestID.ToString());
-
-		// TODO: 未来可以在这里调用屏幕上的 "任务接取成功" 飘字 UI
+			// 如果找到了任务，且它配置为“不可重复 (bIsRepeatable == false)”
+			if (QuestRow && !QuestRow->bIsRepeatable)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("❌ 接取失败：%s 是一次性任务，且你已经完成过了！"), *QuestID.ToString());
+				return; // 拒绝接取
+			}
+		}
 	}
+
+	// 3. 校验通过！接取任务并初始化进度为 0
+	ActiveQuestsProgress.Add(QuestID, 0);
+	UE_LOG(LogTemp, Warning, TEXT("⭐⭐⭐ 成功接取任务: %s ⭐⭐⭐"), *QuestID.ToString());
 }
 
 void UPanLingQuestComponent::OnEnemyKilled(FName EnemyKilledID)
@@ -95,6 +108,8 @@ void UPanLingQuestComponent::OnEnemyKilled(FName EnemyKilledID)
 		}
 		// 从进行中的任务列表里移除
 		ActiveQuestsProgress.Remove(CompletedID);
+		// 将该任务永久记入完成历史档案
+		CompletedQuestsHistory.AddUnique(CompletedID);
 	}
 }
 

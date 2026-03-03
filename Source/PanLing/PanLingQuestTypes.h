@@ -26,6 +26,10 @@ struct FPanLingQuestData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest Rewards")
 	float RewardEXP = 0.f;
 
+	// 是否为可重复任务
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Quest Settings")
+	bool bIsRepeatable = false;
+
 	// 这里以后还可以扩展奖励的物品ID: FName RewardItemID...
 };
 

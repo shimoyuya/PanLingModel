@@ -49,6 +49,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Quest")
 	TMap<FName, int32> ActiveQuestsProgress;
 
+	// --- 新增：已经完成过的任务档案库 ---
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Quest")
+	TArray<FName> CompletedQuestsHistory;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
