@@ -18,6 +18,7 @@ class UInventoryComponent;
 class UPanLingSkillComponent;
 class UPanLingSaveGame;
 class UPanLingQuestComponent;
+class UPanLingQuestNoticeWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -263,5 +264,13 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UPanLingQuestComponent* QuestComp;
+
+	// 配置：任务完成时的弹窗UI类
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UPanLingQuestNoticeWidget> QuestNoticeWidgetClass;
+
+	// 回调函数：处理任务完成的广播
+	UFUNCTION()
+	void HandleQuestCompleted(FName QuestID, float RewardEXP);
 };
 

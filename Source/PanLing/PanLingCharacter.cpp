@@ -28,6 +28,8 @@
 #include "WeaponDataAsset.h"
 #include "PanLingSaveGame.h"
 #include "PanLingQuestComponent.h"
+#include "PanLingQuestNoticeWidget.h"
+#include "Blueprint/UserWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -176,6 +178,12 @@ void APanLingCharacter::BeginPlay()
 			// 把我们身上的属性组件传给 HUD，让它开始监听血量
 			PlayerHUDInstance->InitializeHUD(AttributeComp);
 		}
+	}
+
+	// --- 新增：绑定任务完成的广播 ---
+	if (QuestComp)
+	{
+		QuestComp->OnQuestCompleted.AddDynamic(this, &APanLingCharacter::HandleQuestCompleted);
 	}
 }
 
@@ -694,5 +702,25 @@ void APanLingCharacter::LoadPlayerGame()
 	else
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("未找到存档！"));
+	}
+}
+
+void APanLingCharacter::HandleQuestCompleted(FName QuestID, float RewardEXP)
+{
+	if (QuestNoticeWidgetClass)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			// 生成特效 UI
+			UPanLingQuestNoticeWidget* NoticeWidget = CreateWidget<UPanLingQuestNoticeWidget>(PC, QuestNoticeWidgetClass);
+			if (NoticeWidget)
+			{
+				NoticeWidget->AddToViewport();
+
+				// 传递数据并播放动画
+				NoticeWidget->PlayQuestCompletedAnim(QuestID.ToString(), RewardEXP);
+			}
+		}
 	}
 }

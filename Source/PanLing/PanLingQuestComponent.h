@@ -9,6 +9,9 @@
 
 class UDataTable;
 
+// 声明一个带有两个参数（任务ID，奖励经验）的多播委托
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnQuestCompletedSignature, FName, QuestID, float, RewardEXP);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PANLING_API UPanLingQuestComponent : public UActorComponent
 {
@@ -25,6 +28,10 @@ public:
 	// 新增：当任何怪物被击杀时，供外部调用的接口
 	UFUNCTION(BlueprintCallable, Category = "Quest")
 	void OnEnemyKilled(FName EnemyKilledID);
+
+	// 任务完成时触发的事件
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnQuestCompletedSignature OnQuestCompleted;
 
 protected:
 	// Called when the game starts

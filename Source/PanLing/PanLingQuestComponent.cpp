@@ -91,6 +91,7 @@ void UPanLingQuestComponent::OnEnemyKilled(FName EnemyKilledID)
 					AttrComp->AddEXP(QuestRow->RewardEXP);
 				}
 			}
+			OnQuestCompleted.Broadcast(CompletedID, QuestRow->RewardEXP);
 		}
 		// 从进行中的任务列表里移除
 		ActiveQuestsProgress.Remove(CompletedID);
