@@ -34,6 +34,12 @@ void UPanLingAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Velocity.Z = 0.f;
 	Speed = Velocity.Size();
 
+	// === 新增：计算方向 ===
+	// 获取角色当前的朝向
+	FRotator CharacterRotation = OwnerCharacter->GetActorRotation();
+	// 计算速度向量相对于角色朝向的角度差 (-180 到 180)
+	Direction = CalculateDirection(Velocity, CharacterRotation);
+
 	// 2. 检查是否在空中
 	bIsFalling = CharacterMovement->IsFalling();
 

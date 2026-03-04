@@ -110,7 +110,7 @@ void UCombatComponent::CheckCombo()
 		ComboCount++;        // 段数+1
 
 		// 假设我们最多只有 3 段连招
-		if (ComboCount > 2)
+		if (ComboCount > 4)
 		{
 			ComboCount = 1; // 循环连招或者你可以调用 ResetCombatState() 强制结束
 		}

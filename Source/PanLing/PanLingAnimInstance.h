@@ -34,6 +34,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float Speed;
 
+	// 新增：移动方向 (-180 到 180度，0代表正前方，90代表正右方，-90代表正左方)
+	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	float Direction;
+
 	// 是否处于空中（跳跃或掉落）
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool bIsFalling;
