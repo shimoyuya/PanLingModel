@@ -95,14 +95,14 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	// 交互的具体实现函数
-	void PrimaryInteract();
+	void Interact();
 			
 	// 玩家的 HUD 蓝图类 (用于在编辑器中指定 WBP_PlayerHUD)
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UPanLingPlayerHUD> PlayerHUDClass;
 
 	// 保存创建出来的 HUD 实例
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UPanLingPlayerHUD* PlayerHUDInstance;
 
 	// AI 刺激源组件（让 AI 能稳定听到/看到玩家）
@@ -289,5 +289,28 @@ protected:
 	// 切换任务列表显示/隐藏
 	UFUNCTION(BlueprintCallable, Category = "Quest")
 	void ToggleQuestList();
+
+	/* 显示交互按键 */
+protected:
+	// 交互检测定时器句柄
+	FTimerHandle InteractCheckTimer;
+
+	// 缓存当前检测到的、可交互的对象
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction")
+	AActor* CurrentInteractableActor;
+
+	// 定时器执行的射线检测逻辑
+	void CheckForInteractables();
+
+public:
+	// 射线检测到可交互物品时触发，通知UI显示按键
+	// 在BP_ThirdPersonCharacter中实现这个事件
+	UFUNCTION(BlueprintImplementableEvent, Category = "Interaction")
+	void OnInteractableFound(AActor* InteractableActor);
+
+	// 远离物品时触发，通知UI隐藏按键
+	UFUNCTION(BlueprintImplementableEvent, Category = "Interaction")
+	void OnInteractableLost();
+
 };
 

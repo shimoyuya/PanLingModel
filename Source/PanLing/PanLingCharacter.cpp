@@ -31,6 +31,7 @@
 #include "PanLingQuestNoticeWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "PanLingQuestListWidget.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -128,7 +129,7 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APanLingCharacter::Look);
 
 		//交互
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APanLingCharacter::PrimaryInteract);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APanLingCharacter::Interact);
 		//攻击
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &APanLingCharacter::Attack);
 
@@ -153,6 +154,9 @@ void APanLingCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 void APanLingCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 开启循环定时器，每0.1秒执行一次检测（比放到Tick里更节省性能）
+	GetWorld()->GetTimerManager().SetTimer(InteractCheckTimer, this, &APanLingCharacter::CheckForInteractables, 0.1f, true);
 
 	// 生成武器并交给 CombatComp 装备
 	if (WeaponClass)
@@ -287,42 +291,12 @@ void APanLingCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void APanLingCharacter::PrimaryInteract()
+void APanLingCharacter::Interact()
 {
-	// 获取视线起点 (摄像机位置)
-	FVector Location;
-	FRotator Rotation;
-	GetController()->GetPlayerViewPoint(Location, Rotation);
-
-	// 视线终点 (向前 500 单位)
-	FVector End = Location + (Rotation.Vector() * 600.0f);
-
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic); // 我们假设宝箱是 WorldDynamic
-
-	FHitResult Hit;
-	// 发射射线 (Line Trace)
-	// 如果你想检测更宽的范围，可以用 SphereTraceSingle
-	bool bBlockingHit = GetWorld()->LineTraceSingleByObjectType(Hit, Location, End, ObjectQueryParams);
-	
-	// 绘制调试线 (绿色表示击中，红色表示未击中)
-	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
-	DrawDebugLine(GetWorld(), Location, End, LineColor, false, 2.0f, 0, 2.0f);
-
-	if (bBlockingHit)
+	if (CurrentInteractableActor && CurrentInteractableActor->Implements<UGameplayInterface>())
 	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor)
-		{
-			// 核心逻辑：检查是否实现了接口
-			if (HitActor->Implements<UGameplayInterface>())
-			{
-				// 调用接口函数
-				// 注意语法：IGameplayInterface::Execute_函数名(对象, 参数...)
-				IGameplayInterface::Execute_Interact(HitActor, this);
-				UE_LOG(LogTemp, Warning, TEXT("检测到"));
-			}
-		}
+		// 假设你的接口里执行交互的函数名叫做 Interact (根据你实际的接口函数名修改)
+		IGameplayInterface::Execute_Interact(CurrentInteractableActor, this);
 	}
 }
 
@@ -779,5 +753,53 @@ void APanLingCharacter::ToggleQuestList()
 			PC->SetInputMode(InputMode);
 			PC->bShowMouseCursor = true;
 		}
+	}
+}
+
+void APanLingCharacter::CheckForInteractables()
+{
+	// 获取角色的位置和前方向量 (也可以换成跟随摄像机的位置和朝向)
+	FVector StartLoc = GetActorLocation();
+	FVector ForwardVector = GetActorForwardVector();
+	FVector EndLoc = StartLoc + (ForwardVector * 200.0f); // 检测距离：前方200厘米
+
+	FHitResult HitResult;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this); // 忽略玩家自己
+
+	// 发射一个球形射线 (半径设为40，不容易漏掉物品)
+	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+		this,
+		StartLoc, EndLoc, 90.0f,
+		UEngineTypes::ConvertToTraceType(ECC_Visibility), // 如果你有专门的Interact通道，可在此替换
+		false, ActorsToIgnore,
+		EDrawDebugTrace::None, // 开发阶段可以改为 EDrawDebugTrace::ForDuration 来观察射线形状
+		HitResult,
+		true
+	);
+
+	// 如果射线击中了物体
+	if (bHit && HitResult.GetActor())
+	{
+		AActor* HitActor = HitResult.GetActor();
+
+		// 判断击中的物体是否实现了你的交互接口 GameplayInterface
+		if (HitActor->Implements<UGameplayInterface>())
+		{
+			// 如果这是一个【新】的交互对象 (防止每0.1秒重复触发UI)
+			if (HitActor != CurrentInteractableActor)
+			{
+				CurrentInteractableActor = HitActor;
+				OnInteractableFound(CurrentInteractableActor); // 触发事件，通知UI弹出
+			}
+			return; // 找到了就结束函数
+		}
+	}
+
+	// 如果射线没打中任何东西，或者打中的不是可交互对象，但当前还记着一个对象
+	if (CurrentInteractableActor != nullptr)
+	{
+		CurrentInteractableActor = nullptr;
+		OnInteractableLost(); // 触发事件，通知UI隐藏
 	}
 }
